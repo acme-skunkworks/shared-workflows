@@ -392,8 +392,7 @@ files against the projects that already exist, and create projects for the gaps.
 
 ### 8.2 Gaps found — and how they were resolved
 
-Diffing Tempest's config files (`/Users/rob/Code/tempest/`) against the table above left two genuine
-gaps. Both are now actioned:
+Diffing Tempest's config files against the table above left two genuine gaps. Both are now actioned:
 
 - **`prettier-config` → new publishable package.** Tempest ships `.prettierrc.json` (JSON-formatting
   overrides, plus the `prettier-plugin-astro` / `prettier-plugin-tailwindcss` plugins); all four npm
@@ -418,9 +417,10 @@ are per-repo glue.
 
 When Octavo lands on shared CI it will want the **web-app** slice of Tempest's stack — eslint,
 prettier, tsconfig, markdown, yaml, and (once it has CSS) stylelint — but **not** the SQL/Supabase
-configs. Standing up `prettier-config` and `yamllint-config` now, alongside the already-planned
+configs. Standing up the new **prettier-config** package now, alongside the already-planned
 tsconfig/vitest/stylelint projects, means Octavo consumes ready-made `@acme-skunkworks/*` presets
-rather than re-deriving them from Tempest. (Note the standing caveat that Octavo's CI itself is
+rather than re-deriving them from Tempest; its **yamllint** comes for free from the shared
+`reusable-lint.yml` (§8.2), not a package. (Note the standing caveat that Octavo's CI itself is
 moving to CircleCI for IPv6/Supabase typegen — SK-421 — but its config _packages_ are runner-agnostic
 and unaffected.)
 
@@ -444,13 +444,14 @@ A quick health-check of the four in-scope npm packages and the configs feeding t
   caller (SK-416) should not assume an ESLint/`tsc` lane in every repo until SK-394 lands.
 - **Config drift to retire (feeds §8.2).** `.yamllint.yml` and the `.markdownlint-cli2.jsonc` wrapper
   are duplicated across the four repos. markdownlint already extends the shared package; **yamllint
-  does not** — close that with `yamllint-config` (or workflow-injection) to land the SK-384 win.
+  does not** — close that by centralising it in `shared-workflows`/`reusable-lint.yml` (SK-438), so
+  consumers carry no local copy, landing the SK-384 win.
 - **Known formatter friction.** SK-378 (eslint ↔ Prettier `jsonc` array conflict) and GH-848
   (`turbo.json` lint-staged loop) are recurring; a shared `prettier-config` is the natural place to
   encode the resolution once rather than per-repo `.prettierignore` patches.
 
-None of these block the workflow rollout, but `yamllint-config` and `prettier-config` are the
-highest-leverage "do it while we're in here" items.
+None of these block the workflow rollout, but centralising yamllint (SK-438) and the new
+`prettier-config` package are the highest-leverage "do it while we're in here" items.
 
 ## 10. Open questions & future work
 
