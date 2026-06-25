@@ -32,6 +32,8 @@ jobs:
     name: Validate PR title is a Conventional Commit
     runs-on: ubuntu-latest
     permissions:
+      # amannn/action-semantic-pull-request only reads PR metadata; keep this
+      # narrow so a future edit doesn't broaden or drop it by accident.
       pull-requests: read
     steps:
       - name: 🔠 Lint PR title
