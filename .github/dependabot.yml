@@ -1,0 +1,30 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Group all action bumps into a single PR per week. Keeps notification
+    # noise low and ensures SHA-pinned `uses:` lines stay current across every
+    # workflow. Grouped PRs land or revert atomically. This ecosystem also
+    # covers reusable-workflow `uses:` refs, so the dogfood callers' local refs
+    # and (in consumers) cross-repo `@<sha>` refs are kept fresh the same way.
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
+      include: scope
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Dev-only toolchain (markdownlint, prettier). Grouped + low-noise.
+    groups:
+      dev-dependencies:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore"
+      include: scope

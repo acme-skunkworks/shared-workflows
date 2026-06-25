@@ -1,0 +1,115 @@
+name: CI
+
+# Self-CI for the shared-workflows repo: lint the workflow YAML this repo ships,
+# its Markdown, and its PR title. Deliberately lean — no infrastructure/scripts
+# + bats apparatus (see CLAUDE.md): this repo holds reusable workflows, not a
+# package.
+#
+# The PR-title check is INLINE here rather than calling this repo's own
+# reusable-validate-pr-title.yml: the org enforces `sha_pinning_required`, which
+# rejects local `uses: ./…` reusable refs (startup_failure), and a cross-repo
+# self-reference is circular before the first tagged SHA exists. Consumers DO
+# reference the reusable workflow — by cross-repo `@<sha>`, which is compliant.
+# See CLAUDE.md "Why the PR-title check is inline".
+
+on:
+  pull_request:
+    # `edited` re-runs the PR-title check when a title is corrected.
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    # Mirrors reusable-validate-pr-title.yml so this repo gates its own PRs the
+    # same way consumers will. The job name is the estate-canonical status-check
+    # string (SK-400/405) — keep it stable.
+    name: Validate PR title is a Conventional Commit
+    runs-on: ubuntu-latest
+    permissions:
+      # amannn/action-semantic-pull-request only reads PR metadata; keep this
+      # narrow so a future edit doesn't broaden or drop it by accident.
+      pull-requests: read
+    steps:
+      - name: 🔠 Lint PR title
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            chore
+            ci
+            refactor
+            perf
+            test
+            build
+            style
+            revert
+
+  workflows:
+    name: 📝 YAML & Workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: 📝 Run yamllint
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user --quiet yamllint==1.37.1
+          "$HOME/.local/bin/yamllint" --version
+          "$HOME/.local/bin/yamllint" .
+
+      - name: 🔍 Run actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.5
+          # The installer script is pinned to the v1.7.5 *commit*, not the
+          # mutable tag (estate SHA-pinning policy). The script itself verifies
+          # the downloaded actionlint binary's checksum before running it.
+          ACTIONLINT_INSTALLER_SHA: e11169d0656294827d65370a3c76a2325406da85 # v1.7.5
+        run: |
+          set -euo pipefail
+          base="https://raw.githubusercontent.com/rhysd/actionlint"
+          url="${base}/${ACTIONLINT_INSTALLER_SHA}/scripts/download-actionlint.bash"
+          bash <(curl -fsSL "$url") "$ACTIONLINT_VERSION"
+          ./actionlint -color
+
+  markdown:
+    name: 📝 Markdown
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4.4.0
+        with:
+          run_install: false
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 📝 Lint Markdown
+        run: pnpm run lint:md
