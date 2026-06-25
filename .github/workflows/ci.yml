@@ -74,7 +74,9 @@ jobs:
           ACTIONLINT_VERSION: 1.7.5
         run: |
           set -euo pipefail
-          bash <(curl -fsSL "https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash") "$ACTIONLINT_VERSION"
+          base="https://raw.githubusercontent.com/rhysd/actionlint"
+          url="${base}/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash"
+          bash <(curl -fsSL "$url") "$ACTIONLINT_VERSION"
           ./actionlint -color
 
   markdown:

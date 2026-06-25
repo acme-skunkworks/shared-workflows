@@ -44,6 +44,11 @@ on:
           style
           revert
 
+# Least-privilege default for the called workflow; the job below grants only the
+# pull-requests:read it needs.
+permissions:
+  contents: read
+
 jobs:
   pr-title:
     name: Validate PR title is a Conventional Commit
