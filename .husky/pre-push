@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# Pre-push: blocks direct pushes to main. All changes to main must go through a
+# pull request (the repo squash-merges; the PR title/description is the merge
+# message).
+#
+# Uses printf (not echo) for colour output so escape codes render under
+# strict POSIX sh (dash, busybox), where echo doesn't interpret \033.
+
+LATEST_AUTHOR=$(git log -1 --pretty=%an)
+LATEST_COMMITTER=$(git log -1 --pretty=%cn)
+
+# Skip for known bot identities. Check both author and committer.
+for actor in "$LATEST_AUTHOR" "$LATEST_COMMITTER"; do
+  case "$actor" in
+    "github-actions[bot]" | "road-runner-bot[bot]")
+      printf '⏭️  Skipping pre-push check for bot commit (%s)\n' "$actor"
+      exit 0
+      ;;
+  esac
+done
+
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      printf '\n\033[0;31m❌ ERROR: Direct pushes to '\''main'\'' branch are not allowed\033[0m\n\n'
+      printf '   Push a feature branch and open a PR instead:\n\n'
+      printf '      git checkout -b feat/your-change\n'
+      printf '      git push -u origin feat/your-change\n\n'
+      printf '   \033[1;33mTo bypass this hook (NOT RECOMMENDED):\033[0m git push --no-verify\n\n'
+      exit 1
+      ;;
+  esac
+
+  # Branch deletion — skip the rest of this iteration but keep processing
+  # remaining refs. (`continue`, not `exit 0`, so a deletion alongside a
+  # main push doesn't silently bail out of the whole hook.)
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+done
+
+# Workflow + YAML semantic lint. Pre-commit's lint-staged covers staged files,
+# but a developer using --no-verify on commit (or amending without re-staging
+# YAML) can still push broken workflow files. This is the last gate before CI.
+# Best-effort: skip with an install hint if the tool isn't on PATH locally — CI
+# (the workflows job in ci.yml) still enforces.
+if command -v yamllint >/dev/null 2>&1; then
+  pnpm lint:yaml || exit 1
+elif [ "$(uname -s)" = "Darwin" ]; then
+  printf '⚠️  yamllint not installed — skipping pre-push YAML check. Install: brew install yamllint\n'
+else
+  printf '⚠️  yamllint not installed — skipping pre-push YAML check. Install: pip install --user yamllint==1.37.1\n'
+fi
+
+if command -v actionlint >/dev/null 2>&1; then
+  pnpm lint:workflows || exit 1
+elif [ "$(uname -s)" = "Darwin" ]; then
+  printf '⚠️  actionlint not installed — skipping pre-push workflow check. Install: brew install actionlint\n'
+else
+  printf '⚠️  actionlint not installed — skipping pre-push workflow check. Install: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.5/scripts/download-actionlint.bash)\n'
+fi
+
+printf '\033[0;32m✅ Pre-push checks passed\033[0m\n'
+exit 0

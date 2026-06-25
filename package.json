@@ -1,0 +1,63 @@
+{
+  "name": "@acme-skunkworks/shared-workflows",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reusable GitHub Actions workflows shared across the Acme Skunkworks estate.",
+  "keywords": [
+    "github-actions",
+    "reusable-workflows",
+    "ci"
+  ],
+  "homepage": "https://github.com/acme-skunkworks/shared-workflows#readme",
+  "bugs": {
+    "url": "https://github.com/acme-skunkworks/shared-workflows/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acme-skunkworks/shared-workflows.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Rob Easthope",
+    "url": "https://github.com/RobEasthope"
+  },
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:md": "markdownlint-cli2 \"**/*.md\" \"!**/node_modules/**\"",
+    "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"!**/node_modules/**\"",
+    "lint:workflows": "actionlint",
+    "lint:yaml": "yamllint .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "**/*": [
+      "prettier --write --ignore-unknown"
+    ],
+    "**/package.json": [
+      "bash -c 'sort-package-json \"$@\" || true' --"
+    ],
+    "**/*.{md,mdx}": [
+      "bash -c 'markdownlint-cli2 --fix --config ./.markdownlint-cli2.jsonc \"$@\" || true' --"
+    ],
+    "**/*.{yml,yaml}": [
+      "bash -c 'if command -v yamllint >/dev/null 2>&1; then yamllint \"$@\"; elif [ \"$(uname -s)\" = \"Darwin\" ]; then echo \"⚠️  yamllint not installed — skipping. Install with: brew install yamllint\"; else echo \"⚠️  yamllint not installed — skipping. Install with: pip install --user yamllint==1.37.1\"; fi' --"
+    ],
+    ".github/workflows/*.{yml,yaml}": [
+      "bash -c 'if command -v actionlint >/dev/null 2>&1; then actionlint \"$@\"; elif [ \"$(uname -s)\" = \"Darwin\" ]; then echo \"⚠️  actionlint not installed — skipping. Install with: brew install actionlint\"; else echo \"⚠️  actionlint not installed — skipping. Install via: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.5/scripts/download-actionlint.bash)\"; fi' --"
+    ]
+  },
+  "devDependencies": {
+    "@acme-skunkworks/markdownlint-config": "^2.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
+    "markdownlint-cli2": "^0.18.1",
+    "prettier": "^3.0.0",
+    "sort-package-json": "^3.6.1"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

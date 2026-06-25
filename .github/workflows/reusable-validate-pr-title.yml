@@ -1,0 +1,61 @@
+name: Reusable / Validate PR title
+
+# Reusable (workflow_call) version of the estate's conventional-PR-title check.
+# The repos squash-merge, so the PR title IS the squash subject release-please
+# parses to decide the semver bump (SK-371) — a mistyped prefix silently ships
+# the wrong version. This guards the format.
+#
+# The `pull_request` trigger stays in the CALLER stub; include `edited` so the
+# check re-runs when a title is corrected (the default set omits it).
+#
+# STATUS-CHECK CONTEXT (SK-400 / SK-405): the job below is named
+# `Validate PR title is a Conventional Commit` — the estate-canonical string a
+# single required-check rule can pin across every repo. A reusable-workflow
+# check renders as `<caller-job-id> / <job-name>`, so callers MUST use a
+# consistent caller job id. This estate uses `pr-title`, giving the stable
+# context `pr-title / Validate PR title is a Conventional Commit`. Do NOT rename
+# either half.
+#
+# Consume from another repo (SHA-pinned + Dependabot — see README):
+#
+#   jobs:
+#     pr-title:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@<sha>
+
+on:
+  workflow_call:
+    inputs:
+      types:
+        description: >-
+          Newline-separated Conventional Commit types to allow. Defaults to the
+          types /send-it emits across the estate.
+        type: string
+        required: false
+        default: |
+          feat
+          fix
+          docs
+          chore
+          ci
+          refactor
+          perf
+          test
+          build
+          style
+          revert
+
+jobs:
+  pr-title:
+    name: Validate PR title is a Conventional Commit
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: 🔠 Lint PR title
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Only feat / fix / a `!` breaking marker are release-triggering
+          # (release-please default node bump table); the rest are non-release.
+          types: ${{ inputs.types }}

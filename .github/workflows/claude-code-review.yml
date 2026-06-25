@@ -1,0 +1,29 @@
+name: Claude Code Review
+
+# Caller stub — dogfoods this repo's own reusable workflow. A consumer repo's
+# stub is identical except `uses:` points at
+# `acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@<sha>`.
+#
+# The `paths-ignore` below must live HERE, in the caller: claude-code-action's
+# app-token exchange requires the invoking workflow to match the version on the
+# default branch, so a PR that edits these workflow files 401s on validation and
+# can't be reviewed by the bot anyway — this avoids a spurious failing check.
+# paths-ignore skips only when EVERY changed file matches; a PR touching these
+# plus anything else still runs. (claude-review is not a required check, so a
+# path-skip won't block merges.)
+#
+# Requires the CLAUDE_CODE_OAUTH_TOKEN secret on this repo.
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+    paths-ignore:
+      - ".github/workflows/claude.yml"
+      - ".github/workflows/claude-code-review.yml"
+      - ".github/workflows/reusable-claude.yml"
+      - ".github/workflows/reusable-claude-code-review.yml"
+
+jobs:
+  claude-review:
+    uses: ./.github/workflows/reusable-claude-code-review.yml
+    secrets: inherit
