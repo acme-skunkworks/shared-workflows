@@ -1,15 +1,21 @@
 name: CI
 
 # Self-CI for the shared-workflows repo: lint the workflow YAML this repo ships,
-# plus its Markdown. Deliberately lean — no infrastructure/scripts + bats
-# apparatus (see CLAUDE.md): this repo holds reusable workflows, not a package.
+# its Markdown, and its PR title. Deliberately lean — no infrastructure/scripts
+# + bats apparatus (see CLAUDE.md): this repo holds reusable workflows, not a
+# package.
 #
-# The conventional-PR-title check is a separate workflow (validate-pr-title.yml)
-# that dogfoods this repo's own reusable workflow.
+# The PR-title check is INLINE here rather than calling this repo's own
+# reusable-validate-pr-title.yml: the org enforces `sha_pinning_required`, which
+# rejects local `uses: ./…` reusable refs (startup_failure), and a cross-repo
+# self-reference is circular before the first tagged SHA exists. Consumers DO
+# reference the reusable workflow — by cross-repo `@<sha>`, which is compliant.
+# See CLAUDE.md "Why the PR-title check is inline".
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # `edited` re-runs the PR-title check when a title is corrected.
+    types: [opened, edited, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,6 +25,33 @@ permissions:
   contents: read
 
 jobs:
+  pr-title:
+    # Mirrors reusable-validate-pr-title.yml so this repo gates its own PRs the
+    # same way consumers will. The job name is the estate-canonical status-check
+    # string (SK-400/405) — keep it stable.
+    name: Validate PR title is a Conventional Commit
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: 🔠 Lint PR title
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            chore
+            ci
+            refactor
+            perf
+            test
+            build
+            style
+            revert
+
   workflows:
     name: 📝 YAML & Workflows
     runs-on: ubuntu-latest

@@ -34,10 +34,7 @@ messages, PR titles/bodies, and any user-facing strings.
 │   ├── reusable-claude.yml              # PRODUCT: interactive @claude
 │   ├── reusable-claude-code-review.yml  # PRODUCT: PR review
 │   ├── reusable-validate-pr-title.yml   # PRODUCT: conventional PR title
-│   ├── claude.yml                       # dogfood caller → reusable-claude.yml
-│   ├── claude-code-review.yml           # dogfood caller → reusable-claude-code-review.yml
-│   ├── validate-pr-title.yml            # dogfood caller → reusable-validate-pr-title.yml
-│   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint
+│   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
 └── dependabot.yml                       # weekly grouped github-actions + npm bumps
 ```
 
@@ -57,7 +54,21 @@ messages, PR titles/bodies, and any user-facing strings.
 - **`paths-ignore`** cannot be set on `workflow_call`, so the Claude review's
   paths-ignore lives in the caller stub.
 - The `reusable-` prefix avoids a filename collision with the same-named caller
-  stub in this repo and in consumers.
+  stub in a consumer.
+
+### Why the PR-title check is inline (and there are no `./` callers)
+
+The org enforces **`sha_pinning_required`**, which rejects local
+`uses: ./.github/workflows/…` reusable references — they aren't SHA-pinnable, so
+they fail at startup ([community #170337](https://github.com/orgs/community/discussions/170337)).
+A cross-repo self-reference (`acme-skunkworks/shared-workflows/…@<sha>`) is
+circular before the first tagged SHA exists. So this repo does **not** consume
+its own reusable workflows; `ci.yml` inlines the PR-title check instead (a
+SHA-pinned copy of `reusable-validate-pr-title.yml`'s step, same canonical job
+name). Keep the inline copy in sync if the reusable one changes.
+
+Consumers are unaffected: they reference the reusable workflows by cross-repo
+`@<sha>`, which **is** SHA-pinning compliant.
 
 ### Status-check context (SK-400 / SK-405)
 

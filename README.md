@@ -136,11 +136,18 @@ Releases here are tagged (`vX.Y.Z`); use the SHA the tag points at.
 
 ## Contributing
 
-This repo dogfoods its own workflows — see `.github/workflows/` for the caller
-stubs (`claude.yml`, `claude-code-review.yml`, `validate-pr-title.yml`) calling
-the `reusable-*` workflows via local `./` refs. `ci.yml` lints the workflow YAML
-(actionlint + yamllint) and Markdown. See [CLAUDE.md](CLAUDE.md) for conventions
-and local testing with [`act`](https://github.com/nektos/act).
+`ci.yml` lints the workflow YAML (actionlint + yamllint), the Markdown, and the
+PR title.
+
+> **Why doesn't this repo consume its own reusable workflows via `./`?** The org
+> enforces `sha_pinning_required`, which rejects local `uses: ./…` refs
+> (`startup_failure`), and a cross-repo self-reference is circular before the
+> first tagged SHA exists. So `ci.yml`'s PR-title check is **inline** rather than
+> a caller of `reusable-validate-pr-title.yml`. Consumers reference the reusable
+> workflows by cross-repo `@<sha>` (compliant) — see [How to consume](#how-to-consume).
+
+See [CLAUDE.md](CLAUDE.md) for conventions and local testing with
+[`act`](https://github.com/nektos/act).
 
 ## Licence
 
