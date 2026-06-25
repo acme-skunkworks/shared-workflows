@@ -34,6 +34,8 @@ messages, PR titles/bodies, and any user-facing strings.
 │   ├── reusable-claude.yml              # PRODUCT: interactive @claude
 │   ├── reusable-claude-code-review.yml  # PRODUCT: PR review
 │   ├── reusable-validate-pr-title.yml   # PRODUCT: conventional PR title
+│   ├── claude.yml                       # self-host: inline @claude on THIS repo
+│   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
 │   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
 └── dependabot.yml                       # weekly grouped github-actions + npm bumps
 ```
@@ -69,6 +71,20 @@ name). Keep the inline copy in sync if the reusable one changes.
 
 Consumers are unaffected: they reference the reusable workflows by cross-repo
 `@<sha>`, which **is** SHA-pinning compliant.
+
+### Why the Claude workflows are inline too
+
+For the same reason, dogfooding `@claude` and Claude review **on this repo** uses
+SHA-pinned **inline** copies — `claude.yml` and `claude-code-review.yml` — not
+caller stubs pointing at the `reusable-*` versions. The stock output of
+`/install-github-app` (floating `@v4`/`@v1` tags, no author-association gate)
+won't even start here — `sha_pinning_required` rejects unpinned actions — so
+these inline copies port the hardened `reusable-claude*.yml` bodies verbatim:
+SHA-pinned actions, the ASW-313 author-association gate, `persist-credentials:
+false`, timeouts and review concurrency. The `workflow_call` `inputs` become
+literals and the review's `paths-ignore` (invalid on `workflow_call`) moves onto
+the real `pull_request` trigger. **Keep these in sync with their `reusable-*`
+counterparts** — same rule as the inline PR-title gate.
 
 ### Status-check context (SK-400 / SK-405)
 
