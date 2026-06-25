@@ -44,10 +44,9 @@ on:
           style
           revert
 
-# Least-privilege default for the called workflow; the job below grants only the
-# pull-requests:read it needs.
-permissions:
-  contents: read
+# Deny all token scopes at the workflow root; the job below grants only the
+# pull-requests:read it needs (least privilege; zizmor-clean).
+permissions: {}
 
 jobs:
   pr-title:
