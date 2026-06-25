@@ -72,10 +72,14 @@ jobs:
       - name: 🔍 Run actionlint
         env:
           ACTIONLINT_VERSION: 1.7.5
+          # The installer script is pinned to the v1.7.5 *commit*, not the
+          # mutable tag (estate SHA-pinning policy). The script itself verifies
+          # the downloaded actionlint binary's checksum before running it.
+          ACTIONLINT_INSTALLER_SHA: e11169d0656294827d65370a3c76a2325406da85 # v1.7.5
         run: |
           set -euo pipefail
           base="https://raw.githubusercontent.com/rhysd/actionlint"
-          url="${base}/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash"
+          url="${base}/${ACTIONLINT_INSTALLER_SHA}/scripts/download-actionlint.bash"
           bash <(curl -fsSL "$url") "$ACTIONLINT_VERSION"
           ./actionlint -color
 

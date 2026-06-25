@@ -139,14 +139,17 @@ apparatus — it holds workflows, not a published package, so CI installs
 - **pre-push** — blocks direct pushes to `main` (open a PR instead) and runs
   yamllint + actionlint as the last gate before CI. Bot identities bypass.
 
-Hooks are dormant in CI (`HUSKY=0` set in workflow jobs).
+Hooks are dormant in CI: `HUSKY=0` is set on the only job that runs
+`pnpm install` (the `markdown` job in `ci.yml`) — that's where husky's `prepare`
+would otherwise install them. Other jobs never install deps, so they need no
+override.
 
 ## Testing workflows locally with `act`
 
 `.actrc` pins `ubuntu-latest` to `catthehacker/ubuntu:act-latest`. Example:
 
 ```bash
-act pull_request -W .github/workflows/validate-pr-title.yml
+act pull_request -W .github/workflows/ci.yml
 ```
 
 The Claude workflows need `CLAUDE_CODE_OAUTH_TOKEN`; pass it via
@@ -156,5 +159,6 @@ gitignored).
 ## Git / PR flow
 
 The repo squash-merges and uses the PR title + description as the merge message,
-so the PR title must be a Conventional Commit (enforced by `validate-pr-title.yml`).
+so the PR title must be a Conventional Commit (enforced by the inline `pr-title`
+job in `ci.yml`; consumers use `reusable-validate-pr-title.yml`).
 Never push to `main` directly — branch and open a PR.
