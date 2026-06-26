@@ -1,0 +1,42 @@
+name: ShellCheck
+description: >-
+  Lint the repo's shell scripts with ShellCheck. Uses the binary preinstalled on
+  GitHub-hosted ubuntu runners — no install step, no third-party `uses:` to pin
+  (ADR 0001 §5.7). Trust boundary: SK-422.
+
+inputs:
+  paths:
+    description: >-
+      Space-separated paths/globs to check. Empty (default) discovers tracked
+      `*.sh`/`*.bash` files via `git ls-files`.
+    required: false
+    default: ""
+  severity:
+    description: Minimum severity to report (`error` | `warning` | `info` | `style`).
+    required: false
+    default: style
+
+runs:
+  using: composite
+  steps:
+    - name: 🐚 Run ShellCheck
+      shell: bash
+      env:
+        SC_PATHS: ${{ inputs.paths }}
+        SEVERITY: ${{ inputs.severity }}
+      run: |
+        set -euo pipefail
+        shellcheck --version
+        if [ -n "$SC_PATHS" ]; then
+          # Word-splitting on $SC_PATHS is intentional (multiple paths).
+          # shellcheck disable=SC2086
+          files=$(ls -1 $SC_PATHS)
+        else
+          # Discover tracked shell scripts; -z/xargs -0 is robust to odd names.
+          files=$(git ls-files -z '*.sh' '*.bash' | tr '\0' '\n')
+        fi
+        if [ -z "$files" ]; then
+          echo "No shell scripts found to check."
+          exit 0
+        fi
+        echo "$files" | xargs shellcheck --severity="$SEVERITY"

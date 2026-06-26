@@ -1,0 +1,37 @@
+name: Test (bats)
+description: >-
+  Run the infrastructure test suite with bats (Bash Automated Testing System).
+  Assumes setup-project has already installed dependencies (ADR 0001 §5.7).
+
+# Layer-1 mix-in: a single step. bats is installed as the consumer's
+# devDependency (the `bats` npm package), so — like eslint/vitest/tsc — it is
+# invoked via `pnpm exec` and this action pins no third-party `uses:`.
+# Trust boundary: SK-422.
+
+inputs:
+  paths:
+    description: Path(s) containing the .bats test files.
+    required: false
+    default: infrastructure/tests
+  recursive:
+    description: Recurse into subdirectories (`--recursive`).
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: 🦇 Run bats
+      shell: bash
+      env:
+        BATS_PATHS: ${{ inputs.paths }}
+        RECURSIVE: ${{ inputs.recursive }}
+      run: |
+        set -euo pipefail
+        rec=""
+        if [ "$RECURSIVE" = "true" ]; then
+          rec="--recursive"
+        fi
+        # Word-splitting on $BATS_PATHS is intentional (multiple paths).
+        # shellcheck disable=SC2086
+        pnpm exec bats $rec $BATS_PATHS

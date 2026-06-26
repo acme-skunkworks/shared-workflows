@@ -30,6 +30,12 @@ messages, PR titles/bodies, and any user-facing strings.
 
 ```
 .github/
+├── actions/                             # PRODUCT: Layer-1 composite actions (pick-and-mix)
+│   ├── setup-project/                   #   pnpm + Node-from-.nvmrc + store cache
+│   ├── eslint/ lint-markdown/ lint-yaml/    #   lint mix-ins
+│   ├── typecheck/ test-vitest/ test-bats/   #   build/test mix-ins
+│   ├── shellcheck/ changelog-validate/  #   infra/changelog mix-ins
+│   └── README.md                        #   the action catalogue + rationale
 ├── workflows/
 │   ├── reusable-claude.yml              # PRODUCT: interactive @claude
 │   ├── reusable-claude-code-review.yml  # PRODUCT: PR review
@@ -57,6 +63,28 @@ messages, PR titles/bodies, and any user-facing strings.
   paths-ignore lives in the caller stub.
 - The `reusable-` prefix avoids a filename collision with the same-named caller
   stub in a consumer.
+
+## Composite actions (Layer 1)
+
+ADR 0001 (`docs/adr/0001-shared-ci-architecture-for-npm-packages.md`, §5.7) splits
+the estate's CI into two layers: **Layer 1 = granular composite actions** under
+`.github/actions/` (the pick-and-mix primitives) and **Layer 2 = the coarse
+`reusable-*.yml` workflows** that compose them. Splitting at the action layer is
+free (steps in the calling job — no extra runner/install); splitting at the
+workflow layer is not (a job each). So composability lives in the actions; the
+reusable workflows stay few and pay setup once. See `.github/actions/README.md`.
+
+- Each action takes plain `with:` inputs; in the reusable workflows those are
+  fed from each consumer's `repo-config.yaml` (the per-repo `load-repo-config`
+  stays local). Composite actions inherit the calling job's permissions.
+- `lint-yaml` injects **this repo's own** `.yamllint.yml` (resolved relative to
+  `github.action_path`) so consumers carry no local copy (SK-438). The root file
+  stays the single source of truth — keep it in sync, don't fork a copy.
+- Tool versions/pins (pnpm, Node, yamllint, actionlint) **mirror `ci.yml`** so the
+  dogfooded self-CI and the shipped actions never drift. Keep them aligned.
+- **This repo does not dogfood the actions via `uses:`** — same
+  `sha_pinning_required` reason as the inline workflows below. They are authored
+  here and consumed cross-repo by `@<sha>`; Layer 2 (SK-415/416) wires them.
 
 ### Why the PR-title check is inline (and there are no `./` callers)
 

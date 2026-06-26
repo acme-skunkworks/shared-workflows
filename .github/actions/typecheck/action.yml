@@ -1,0 +1,30 @@
+name: Typecheck
+description: >-
+  Run the TypeScript compiler in no-emit mode (`tsc --noEmit`) to type-check the
+  repo. Assumes setup-project has already installed dependencies (ADR 0001 §5.7).
+
+# Layer-1 mix-in: a single step. TypeScript is the consumer's devDependency —
+# invoked via `pnpm exec`, so no third-party `uses:` to pin. Trust boundary: SK-422.
+
+inputs:
+  tsconfig:
+    description: >-
+      Path to a tsconfig to type-check (passed as `-p`). Leave empty to use the
+      default tsconfig.json resolution.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: 🔎 Typecheck (tsc --noEmit)
+      shell: bash
+      env:
+        TSCONFIG: ${{ inputs.tsconfig }}
+      run: |
+        set -euo pipefail
+        if [ -n "$TSCONFIG" ]; then
+          pnpm exec tsc --noEmit -p "$TSCONFIG"
+        else
+          pnpm exec tsc --noEmit
+        fi

@@ -1,0 +1,35 @@
+name: Test (Vitest)
+description: >-
+  Run the unit test suite once with Vitest (`vitest run`). Assumes setup-project
+  has already installed dependencies (ADR 0001 §5.7).
+
+# Layer-1 mix-in: a single step. Vitest is the consumer's devDependency —
+# invoked via `pnpm exec`, so no third-party `uses:` to pin. Trust boundary: SK-422.
+
+inputs:
+  args:
+    description: Extra arguments passed to `vitest run`.
+    required: false
+    default: ""
+  coverage:
+    description: Whether to collect coverage (`--coverage`).
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: 🧪 Run Vitest
+      shell: bash
+      env:
+        VITEST_ARGS: ${{ inputs.args }}
+        COVERAGE: ${{ inputs.coverage }}
+      run: |
+        set -euo pipefail
+        cov=""
+        if [ "$COVERAGE" = "true" ]; then
+          cov="--coverage"
+        fi
+        # Word-splitting on $VITEST_ARGS is intentional (multiple flags).
+        # shellcheck disable=SC2086
+        pnpm exec vitest run $cov $VITEST_ARGS

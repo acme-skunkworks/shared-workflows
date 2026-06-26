@@ -1,0 +1,78 @@
+name: Lint YAML
+description: >-
+  Run yamllint (using shared-workflows' centralised config) and, optionally,
+  actionlint over the consumer's tree. Implements the SK-438 config injection so
+  consumers carry no local `.yamllint.yml` (ADR 0001 §5.7, §8.2/§9).
+
+# Layer-1 mix-in. yamllint and actionlint are NOT Node tools, so they are
+# installed here at pinned versions rather than via `pnpm exec`:
+#   - yamllint 1.37.1 via `pip --user`
+#   - actionlint 1.7.5 via its installer script, pinned to the v1.7.5 *commit*
+#     (the script verifies the downloaded binary's checksum).
+# Versions/pins mirror this repo's own ci.yml so the two never drift.
+#
+# Config injection (SK-438): yamllint runs with `-c` pointed at shared-workflows'
+# OWN `.yamllint.yml`, resolved relative to ${{ github.action_path }} (this repo
+# is checked out alongside the action when a consumer references it cross-repo).
+# That root file stays the single source of truth — not duplicated into here.
+#
+# Trust boundary (SK-422): pinned installer SHA + checksum-verified binary.
+
+inputs:
+  paths:
+    description: Paths/globs to lint with yamllint.
+    required: false
+    default: "."
+  actionlint:
+    description: Whether to also run actionlint over `.github/workflows`.
+    required: false
+    default: "true"
+  yamllint-version:
+    description: yamllint version to install via pip.
+    required: false
+    default: 1.37.1
+  actionlint-version:
+    description: actionlint version to install via the pinned installer.
+    required: false
+    default: 1.7.5
+
+runs:
+  using: composite
+  steps:
+    - name: 📝 Run yamllint
+      shell: bash
+      env:
+        YAMLLINT_VERSION: ${{ inputs.yamllint-version }}
+        YAMLLINT_PATHS: ${{ inputs.paths }}
+        # The centralised config ships in THIS action's repo; github.action_path
+        # points at .github/actions/lint-yaml, so the repo root is three up.
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        # `--break-system-packages` is the PEP 668 escape hatch: a no-op on the
+        # GitHub-hosted runner's Python, but required on a distro Python that
+        # marks itself externally-managed (e.g. Ubuntu 24.04). Keeps the install
+        # portable across runner images without a venv dance.
+        python3 -m pip install --user --quiet --break-system-packages \
+          "yamllint==${YAMLLINT_VERSION}"
+        config="$(realpath "${ACTION_PATH}/../../../.yamllint.yml")"
+        echo "Using centralised yamllint config: ${config}"
+        "$HOME/.local/bin/yamllint" --version
+        # Word-splitting on $YAMLLINT_PATHS is intentional (multiple paths).
+        # shellcheck disable=SC2086
+        "$HOME/.local/bin/yamllint" -c "$config" $YAMLLINT_PATHS
+
+    - name: 🔍 Run actionlint
+      if: inputs.actionlint == 'true'
+      shell: bash
+      env:
+        ACTIONLINT_VERSION: ${{ inputs.actionlint-version }}
+        # Installer pinned to the v1.7.5 *commit*, not the mutable tag (estate
+        # SHA-pinning policy). The script checksum-verifies the binary it fetches.
+        ACTIONLINT_INSTALLER_SHA: e11169d0656294827d65370a3c76a2325406da85 # v1.7.5
+      run: |
+        set -euo pipefail
+        base="https://raw.githubusercontent.com/rhysd/actionlint"
+        url="${base}/${ACTIONLINT_INSTALLER_SHA}/scripts/download-actionlint.bash"
+        bash <(curl -fsSL "$url") "$ACTIONLINT_VERSION"
+        ./actionlint -color
