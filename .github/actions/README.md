@@ -39,9 +39,10 @@ needs.
 | `changelog-validate` | dated-changelog format + completeness                                            |
 
 All except `setup-project` assume `setup-project` has run earlier in the same job
-(they invoke locally installed tooling via `pnpm exec`). `lint-yaml` and
-`shellcheck` are the exceptions that fetch/use non-Node tools: yamllint (pip),
-actionlint (pinned installer), and the runner's preinstalled ShellCheck.
+(they invoke locally installed tooling via `pnpm exec`, or `pnpm run` for the
+package's own scripts as `build` does). `lint-yaml` and `shellcheck` are the
+exceptions that fetch/use non-Node tools: yamllint (pip), actionlint (pinned
+installer), and the runner's preinstalled ShellCheck.
 
 ## Conventions
 
