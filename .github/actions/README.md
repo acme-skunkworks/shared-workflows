@@ -27,7 +27,7 @@ needs.
 
 | Action               | What it does                                                                     |
 | -------------------- | -------------------------------------------------------------------------------- |
-| `setup-project`      | pnpm + Node (from `.nvmrc`) + restore-only pnpm store cache, then install        |
+| `setup-project`      | pnpm + Node (from `.nvmrc`) + lockfile-keyed pnpm store cache, then install      |
 | `eslint`             | ESLint over the repo (consumer's flat config + `@acme-skunkworks/eslint-config`) |
 | `lint-markdown`      | markdownlint-cli2                                                                |
 | `lint-yaml`          | yamllint (config injected from this repo, SK-438) + actionlint                   |

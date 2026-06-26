@@ -11,10 +11,13 @@ description: >-
 inputs:
   globs:
     description: >-
-      Globs passed to markdownlint-cli2. Defaults to the estate pattern (all
-      Markdown, excluding node_modules).
+      Newline-separated globs passed to markdownlint-cli2 (one per line; `!`
+      negates). Defaults to the estate pattern (all Markdown, excluding
+      node_modules).
     required: false
-    default: '"**/*.md" "!**/node_modules/**"'
+    default: |
+      **/*.md
+      !**/node_modules/**
 
 runs:
   using: composite
@@ -25,6 +28,10 @@ runs:
         MD_GLOBS: ${{ inputs.globs }}
       run: |
         set -euo pipefail
-        # Word-splitting on $MD_GLOBS is intentional — it carries multiple globs.
-        # shellcheck disable=SC2086
-        eval "pnpm exec markdownlint-cli2 $MD_GLOBS"
+        # Read globs as plain data (one per line) into an array — no `eval`, so a
+        # glob value can never be reinterpreted as shell.
+        globs=()
+        while IFS= read -r glob; do
+          [ -n "$glob" ] && globs+=("$glob")
+        done <<<"$MD_GLOBS"
+        pnpm exec markdownlint-cli2 "${globs[@]}"

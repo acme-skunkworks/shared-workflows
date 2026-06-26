@@ -27,16 +27,27 @@ runs:
       run: |
         set -euo pipefail
         shellcheck --version
+        # Build the target list as an array so paths with spaces survive intact.
+        files=()
         if [ -n "$SC_PATHS" ]; then
-          # Word-splitting on $SC_PATHS is intentional (multiple paths).
-          # shellcheck disable=SC2086
-          files=$(ls -1 $SC_PATHS)
+          # Word-splitting on $SC_PATHS is intentional (space-separated paths).
+          # shellcheck disable=SC2206
+          paths=($SC_PATHS)
+          for p in "${paths[@]}"; do
+            if [ -d "$p" ]; then
+              while IFS= read -r -d '' f; do files+=("$f"); done \
+                < <(find "$p" -type f \( -name '*.sh' -o -name '*.bash' \) -print0)
+            else
+              files+=("$p")
+            fi
+          done
         else
-          # Discover tracked shell scripts; -z/xargs -0 is robust to odd names.
-          files=$(git ls-files -z '*.sh' '*.bash' | tr '\0' '\n')
+          # Discover tracked shell scripts; NUL-delimited, robust to odd names.
+          while IFS= read -r -d '' f; do files+=("$f"); done \
+            < <(git ls-files -z '*.sh' '*.bash')
         fi
-        if [ -z "$files" ]; then
+        if [ "${#files[@]}" -eq 0 ]; then
           echo "No shell scripts found to check."
           exit 0
         fi
-        echo "$files" | xargs shellcheck --severity="$SEVERITY"
+        shellcheck --severity="$SEVERITY" "${files[@]}"

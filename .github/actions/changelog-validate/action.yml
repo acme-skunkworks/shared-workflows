@@ -5,18 +5,20 @@ description: >-
   installed dependencies (ADR 0001 §5.7).
 
 # Layer-1 mix-in: a single step. The estate's dated-changelog validator ships
-# with each repo (a package script / bundled tool), so this action just invokes
-# it via the consumer's toolchain — no third-party `uses:` to pin.
-# Trust boundary: SK-422.
+# with each repo as a package script, so this action runs that script via the
+# consumer's toolchain — no third-party `uses:` to pin. Trust boundary: SK-422.
 #
-# NOTE: the default command assumes a `changelog:validate` package script. If a
-# repo names its validator differently, pass `command:` to override.
+# The validator is named by a `script` input (a pnpm script name), NOT a free
+# shell command: `pnpm run "$script"` passes it as a single argument, so the
+# input can never be reinterpreted as shell (no `eval`).
 
 inputs:
-  command:
-    description: Command that validates the dated changelog (run via the repo's shell).
+  script:
+    description: >-
+      pnpm script that validates the dated changelog (run as `pnpm run <script>`).
+      If a repo names its validator differently, override this.
     required: false
-    default: pnpm run changelog:validate
+    default: changelog:validate
 
 runs:
   using: composite
@@ -24,7 +26,7 @@ runs:
     - name: 🗒️ Validate changelog
       shell: bash
       env:
-        CHANGELOG_COMMAND: ${{ inputs.command }}
+        CHANGELOG_SCRIPT: ${{ inputs.script }}
       run: |
         set -euo pipefail
-        eval "$CHANGELOG_COMMAND"
+        pnpm run "$CHANGELOG_SCRIPT"

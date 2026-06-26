@@ -28,11 +28,15 @@ inputs:
     required: false
     default: "true"
   yamllint-version:
-    description: yamllint version to install via pip.
+    description: >-
+      yamllint version to install via pip. Pinned to match this repo's ci.yml —
+      bump deliberately in lockstep, not ad-hoc per consumer (SK-422).
     required: false
     default: 1.37.1
   actionlint-version:
-    description: actionlint version to install via the pinned installer.
+    description: >-
+      actionlint version to install via the pinned installer. Pinned to match
+      ci.yml — bump deliberately in lockstep, not ad-hoc per consumer (SK-422).
     required: false
     default: 1.7.5
 
