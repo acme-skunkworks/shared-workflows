@@ -96,7 +96,7 @@ on:
           — bump in lockstep, not ad-hoc per consumer (SK-422).
         type: string
         required: false
-        default: 1.7.5
+        default: 1.7.12
       changelog:
         description: Run the dated-changelog validation check.
         type: boolean

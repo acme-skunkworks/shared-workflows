@@ -58,7 +58,7 @@ if command -v actionlint >/dev/null 2>&1; then
 elif [ "$(uname -s)" = "Darwin" ]; then
   printf '⚠️  actionlint not installed — skipping pre-push workflow check. Install: brew install actionlint\n'
 else
-  printf '⚠️  actionlint not installed — skipping pre-push workflow check. Install: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.5/scripts/download-actionlint.bash)\n'
+  printf '⚠️  actionlint not installed — skipping pre-push workflow check. Install: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash)\n'
 fi
 
 printf '\033[0;32m✅ Pre-push checks passed\033[0m\n'

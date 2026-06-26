@@ -7,7 +7,7 @@ description: >-
 # Layer-1 mix-in. yamllint and actionlint are NOT Node tools, so they are
 # installed here at pinned versions rather than via `pnpm exec`:
 #   - yamllint 1.37.1 via `pip --user`
-#   - actionlint 1.7.5 via its installer script, pinned to the v1.7.5 *commit*
+#   - actionlint 1.7.12 via its installer script, pinned to the v1.7.12 *commit*
 #     (the script verifies the downloaded binary's checksum).
 # Versions/pins mirror this repo's own ci.yml so the two never drift.
 #
@@ -38,7 +38,7 @@ inputs:
       actionlint version to install via the pinned installer. Pinned to match
       ci.yml — bump deliberately in lockstep, not ad-hoc per consumer (SK-422).
     required: false
-    default: 1.7.5
+    default: 1.7.12
 
 runs:
   using: composite
@@ -71,9 +71,9 @@ runs:
       shell: bash
       env:
         ACTIONLINT_VERSION: ${{ inputs.actionlint-version }}
-        # Installer pinned to the v1.7.5 *commit*, not the mutable tag (estate
+        # Installer pinned to the v1.7.12 *commit*, not the mutable tag (estate
         # SHA-pinning policy). The script checksum-verifies the binary it fetches.
-        ACTIONLINT_INSTALLER_SHA: e11169d0656294827d65370a3c76a2325406da85 # v1.7.5
+        ACTIONLINT_INSTALLER_SHA: 914e7df21a07ef503a81201c76d2b11c789d3fca # v1.7.12
       run: |
         set -euo pipefail
         base="https://raw.githubusercontent.com/rhysd/actionlint"
