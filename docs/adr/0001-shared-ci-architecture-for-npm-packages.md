@@ -274,9 +274,9 @@ the expensive axis and splitting at the _action_ layer is the cheap one. Therefo
 **Pick-and-mix lives at the composite-action layer; reusable workflows are a few coarse bundles.**
 
 - **Granular composite actions (the mix-ins, split freely):** `setup-project`, `eslint`,
-  `lint-markdown`, `lint-yaml` (yamllint + actionlint), `typecheck`, `test-vitest`, `test-bats`,
-  `shellcheck`, `changelog-validate`. A repo composes exactly the ones it needs inside one job — one
-  setup, N checks.
+  `lint-markdown`, `lint-yaml` (yamllint + actionlint), `build`, `typecheck`, `test-vitest`,
+  `test-bats`, `shellcheck`, `changelog-validate`. A repo composes exactly the ones it needs inside
+  one job — one setup, N checks.
 - **Coarse reusable workflows (the convenience bundles, kept few):** `reusable-lint.yml`
   (SK-415 — setup + eslint + markdown + yaml + changelog) and `reusable-build-test.yml`
   (SK-416 — setup + build + typecheck + test + infra) each pay setup **once** and run several

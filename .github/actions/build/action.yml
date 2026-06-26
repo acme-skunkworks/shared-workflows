@@ -1,0 +1,28 @@
+name: Build
+description: >-
+  Run the package's build script (`pnpm run build`) to verify it compiles/bundles
+  cleanly. This is a VERIFICATION build — its output is discarded; the published
+  artefact is rebuilt fresh in the release job (reusable-release.yml, SK-417),
+  never reused from here. Assumes setup-project has already installed
+  dependencies (ADR 0001 §5.7).
+
+# Layer-1 mix-in: a single step. The build tool (tsc/tsup/…) is the consumer's
+# devDependency — invoked via `pnpm run`, so no third-party `uses:` to pin.
+# Trust boundary: SK-422.
+
+inputs:
+  script:
+    description: pnpm script that builds the package.
+    required: false
+    default: build
+
+runs:
+  using: composite
+  steps:
+    - name: 🏗️ Run build
+      shell: bash
+      env:
+        BUILD_SCRIPT: ${{ inputs.script }}
+      run: |
+        set -euo pipefail
+        pnpm run "$BUILD_SCRIPT"
