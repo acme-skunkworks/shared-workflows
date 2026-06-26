@@ -196,10 +196,11 @@ repo's own Actions (D5).
 ### 5.2 Layer 1 — composite actions (the atoms)
 
 A `setup-project` composite action (the portable distillate of Tempest's) does pnpm install + Node
-setup via `node-version-file: .nvmrc` + the exact-key tool/store caches. Restore-only by default;
-the contention-avoidance "dedicated save job" pattern is **not** needed at single-package scale (one
-setup per workflow, not nine). Consumed by the reusable workflows and available to any repo that
-needs to hand-assemble a non-standard job.
+setup via `node-version-file: .nvmrc` + the exact-key tool/store caches. The pnpm store cache
+restores at job start and saves in a single post-job step (`cache: pnpm`); the contention-avoidance
+_dedicated save job_ pattern is **not** needed at single-package scale (one setup per workflow, not
+nine). Consumed by the reusable workflows and available to any repo that needs to hand-assemble a
+non-standard job.
 
 ### 5.3 Layer 2 — reusable workflows (the commodity jobs)
 
