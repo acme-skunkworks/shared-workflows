@@ -40,6 +40,7 @@ messages, PR titles/bodies, and any user-facing strings.
 │   ├── reusable-claude.yml              # PRODUCT: interactive @claude
 │   ├── reusable-claude-code-review.yml  # PRODUCT: PR review
 │   ├── reusable-validate-pr-title.yml   # PRODUCT: conventional PR title
+│   ├── reusable-lint.yml                # PRODUCT: coarse lint bundle (Layer 2)
 │   ├── claude.yml                       # self-host: inline @claude on THIS repo
 │   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
 │   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
@@ -63,6 +64,15 @@ messages, PR titles/bodies, and any user-facing strings.
   paths-ignore lives in the caller stub.
 - The `reusable-` prefix avoids a filename collision with the same-named caller
   stub in a consumer.
+- **A Layer-2 workflow references its sibling Layer-1 actions by full cross-repo
+  path, SHA-pinned** (`acme-skunkworks/shared-workflows/.github/actions/…@<sha>`),
+  never `./.github/actions/…`: inside a `workflow_call` job a `./` path resolves
+  against the **caller's** workspace, not this repo
+  ([community #18601](https://github.com/orgs/community/discussions/18601)), and
+  `sha_pinning_required` rejects an unpinned local ref. The full-path form is also
+  what populates `github.action_path` so `lint-yaml`'s `.yamllint.yml` injection
+  resolves. `reusable-lint.yml` pins to the actions' commit (no release tag exists
+  yet); the release process maintains it once tags land.
 
 ## Composite actions (Layer 1)
 

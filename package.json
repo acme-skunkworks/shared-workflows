@@ -45,7 +45,7 @@
       "bash -c 'if command -v yamllint >/dev/null 2>&1; then yamllint \"$@\"; elif [ \"$(uname -s)\" = \"Darwin\" ]; then echo \"⚠️  yamllint not installed — skipping. Install with: brew install yamllint\"; else echo \"⚠️  yamllint not installed — skipping. Install with: pip install --user yamllint==1.37.1\"; fi' --"
     ],
     ".github/workflows/*.{yml,yaml}": [
-      "bash -c 'if command -v actionlint >/dev/null 2>&1; then actionlint \"$@\"; elif [ \"$(uname -s)\" = \"Darwin\" ]; then echo \"⚠️  actionlint not installed — skipping. Install with: brew install actionlint\"; else echo \"⚠️  actionlint not installed — skipping. Install via: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.5/scripts/download-actionlint.bash)\"; fi' --"
+      "bash -c 'if command -v actionlint >/dev/null 2>&1; then actionlint \"$@\"; elif [ \"$(uname -s)\" = \"Darwin\" ]; then echo \"⚠️  actionlint not installed — skipping. Install with: brew install actionlint\"; else echo \"⚠️  actionlint not installed — skipping. Install via: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash)\"; fi' --"
     ]
   },
   "devDependencies": {

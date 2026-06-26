@@ -1,0 +1,169 @@
+name: Reusable / Lint
+
+# Reusable (workflow_call) version of the estate's lint bundle — the coarse
+# Layer-2 convenience workflow (ADR 0001 §5.7). One job pays `setup-project`
+# ONCE, then composes the shared Layer-1 lint composite actions: eslint,
+# lint-markdown, lint-yaml (yamllint + actionlint) and changelog-validate.
+# Consumers drop their per-repo lint jobs and call this instead. Prettier is
+# deliberately out of scope until a `prettier` composite action exists (it is
+# not in §5.7's canonical bundle).
+#
+# Each sub-check has a boolean opt-out input (`eslint: false`, `markdown:
+# false`, …) — §5.7's first opt-out rung: drop a check without leaving the
+# bundle. The other inputs are thin pass-throughs to the composite actions,
+# fed in a caller stub from the consumer's `repo-config.yaml`.
+#
+# SAME-REPO ACTION REFERENCES: a reusable workflow CANNOT reach its sibling
+# actions via a local `./.github/actions/…` path — inside a `workflow_call`
+# job a `./` path resolves against the CALLER's workspace, not this repo
+# (community #18601), and `sha_pinning_required` rejects an unpinned local ref
+# anyway. So each action below is referenced by its full cross-repo path,
+# SHA-pinned. That full-path form is also what populates `github.action_path`
+# so lint-yaml's centralised `.yamllint.yml` injection resolves (SK-438).
+#
+# This repo does NOT dogfood this workflow (the same circularity that inlines
+# ci.yml/claude.yml); it is exercised by consumers, where the pinned SHA exists.
+#
+# STATUS-CHECK CONTEXT: the job is named `Lint`; a reusable-workflow check
+# renders as `<caller-job-id> / <job-name>`, so callers SHOULD use the caller
+# job id `lint`, giving `lint / Lint`. The estate's required check is the
+# consumer's local `go/no-go` aggregator (SK-424), so this context is not
+# ruleset-pinned — but keep the id/name stable for legibility.
+#
+# Consume from another repo (SHA-pinned + Dependabot — see README):
+#
+#   jobs:
+#     lint:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-lint.yml@<sha>
+
+on:
+  workflow_call:
+    inputs:
+      node-version-file:
+        description: File to read the Node version from (passed to setup-project).
+        type: string
+        required: false
+        default: .nvmrc
+      eslint:
+        description: Run the ESLint check.
+        type: boolean
+        required: false
+        default: true
+      eslint-args:
+        description: Arguments passed to `eslint` (paths/globs and flags).
+        type: string
+        required: false
+        default: "."
+      markdown:
+        description: Run the Markdown (markdownlint-cli2) check.
+        type: boolean
+        required: false
+        default: true
+      markdown-globs:
+        description: >-
+          Newline-separated globs passed to markdownlint-cli2 (one per line; `!`
+          negates). Defaults to the estate pattern.
+        type: string
+        required: false
+        default: |
+          **/*.md
+          !**/node_modules/**
+      yaml:
+        description: Run the YAML check (yamllint, plus actionlint when enabled).
+        type: boolean
+        required: false
+        default: true
+      yaml-paths:
+        description: Paths/globs to lint with yamllint.
+        type: string
+        required: false
+        default: "."
+      actionlint:
+        description: Also run actionlint over `.github/workflows` (within the YAML check).
+        type: boolean
+        required: false
+        default: true
+      yamllint-version:
+        description: >-
+          yamllint version to install via pip. Mirrors this repo's ci.yml — bump
+          in lockstep, not ad-hoc per consumer (SK-422).
+        type: string
+        required: false
+        default: 1.37.1
+      actionlint-version:
+        description: >-
+          actionlint version to install via the pinned installer. Mirrors ci.yml
+          — bump in lockstep, not ad-hoc per consumer (SK-422).
+        type: string
+        required: false
+        default: 1.7.12
+      changelog:
+        description: >-
+          Run the dated-changelog validation check. A repo without a dated
+          changelog should set this to false, else `pnpm changelog:validate`
+          fails on first adoption.
+        type: boolean
+        required: false
+        default: true
+      changelog-script:
+        description: pnpm script that validates the dated changelog.
+        type: string
+        required: false
+        default: changelog:validate
+
+# Deny all token scopes at the workflow root; the job below grants only the
+# contents:read that checkout needs (least privilege; zizmor-clean).
+permissions: {}
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    # setup-project's `pnpm install` would otherwise run the consumer's
+    # `prepare`/husky hook in CI (mirrors ci.yml's markdown job).
+    env:
+      HUSKY: 0
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: 🧰 Set up project
+        # Only the pnpm-backed checks (eslint/markdown/changelog) need install;
+        # skip it when a repo runs YAML-only (yamllint/actionlint use pip + the
+        # pinned installer, not pnpm).
+        if: ${{ inputs.eslint || inputs.markdown || inputs.changelog }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+
+      - name: 🧹 ESLint
+        if: ${{ inputs.eslint }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/eslint@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          args: ${{ inputs.eslint-args }}
+
+      - name: 📝 Lint Markdown
+        if: ${{ inputs.markdown }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          globs: ${{ inputs.markdown-globs }}
+
+      - name: 📐 Lint YAML
+        if: ${{ inputs.yaml }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-yaml@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          paths: ${{ inputs.yaml-paths }}
+          actionlint: ${{ inputs.actionlint }}
+          yamllint-version: ${{ inputs.yamllint-version }}
+          actionlint-version: ${{ inputs.actionlint-version }}
+
+      - name: 🗒️ Validate changelog
+        if: ${{ inputs.changelog }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/changelog-validate@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          script: ${{ inputs.changelog-script }}
