@@ -247,7 +247,6 @@ jobs:
     permissions:
       contents: write # Git tags + GitHub releases on publish
       id-token: write # OIDC for npm Trusted Publishing + provenance
-      issues: write # Open a tracking issue if the release fails (notify step)
     steps:
       - name: 🛎️ Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -307,8 +306,10 @@ jobs:
 
       # Download the exact tarball built in the unprivileged `build` job (ASW-328)
       # — this job never builds from source, so no build-time code runs alongside
-      # the npm OIDC credential.
+      # the npm OIDC credential. Only on a real release (the publish + tag steps
+      # below gate on the same condition), so a no-op feature merge skips it.
       - name: ⬇️ Download tarball artifact
+        if: steps.gate.outputs.publish == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: npm-tarball
@@ -316,9 +317,18 @@ jobs:
 
       - name: 🔎 Resolve tarball path
         id: tb
+        if: steps.gate.outputs.publish == 'true'
         run: |
           set -euo pipefail
-          tarball="$(ls "$PWD"/.artifact/*.tgz)"
+          # Assert exactly one tarball (mirrors the pack step) so a corrupt or
+          # multi-file artifact fails loudly here, not as a confusing multi-line
+          # $TARBALL "no such file" mid-publish.
+          set -- "$PWD"/.artifact/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "::error::expected exactly one tarball in .artifact/, found $#: $*"
+            exit 1
+          fi
+          tarball="$1"
           echo "path=$tarball" >> "$GITHUB_OUTPUT"
           echo "Publishing tarball: $tarball"
 
@@ -415,40 +425,6 @@ jobs:
             --notes "$notes"
           echo "Created $tag at $GITHUB_SHA."
 
-      # Fires only if a step above failed. A release runs post-merge with nobody
-      # watching a PR, so a failed publish would otherwise be silent — open (or
-      # comment on) a tracking issue. Covers run FAILURES only.
-      - name: 🚨 Notify on release failure
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          set -euo pipefail
-          title="🚨 Release workflow failed"
-          body=$(printf '%s\n' \
-            "The Release workflow failed on \`${GITHUB_REF_NAME}\`." \
-            "" \
-            "- Run: $RUN_URL" \
-            "" \
-            "## Likely cause & fix" \
-            "- **Build step** — see the failing step in the run log." \
-            "- **npm publish (OIDC)** — Trusted Publishing hiccup, or the version is already published. The publish step is idempotent, so a re-run usually clears a transient failure." \
-            "" \
-            "Re-run from the Actions tab once resolved. This issue auto-comments on repeat failures instead of opening duplicates."
-          )
-          # Search the text portion only — GitHub's full-text search indexes emoji
-          # unreliably, so matching on 🚨 risks opening a duplicate every failure.
-          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
-            --search "Release workflow failed in:title" --json number --jq '.[0].number // empty')
-          if [ -n "$existing" ]; then
-            echo "Appending to existing failure issue #$existing."
-            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
-          else
-            echo "Opening a new failure issue."
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
-          fi
-
   # Secondary publish target (ASW-323). A SEPARATE job so `packages: write` is
   # scoped here and never granted to the `release` job. Runs only after npm
   # publish succeeds (needs: release) and on the same gate + ref guard +
@@ -498,7 +474,14 @@ jobs:
         id: tb
         run: |
           set -euo pipefail
-          tarball="$(ls "$PWD"/.artifact/*.tgz)"
+          # Assert exactly one tarball (mirrors the pack step) so a corrupt or
+          # multi-file artifact fails loudly here, not mid-attest/publish.
+          set -- "$PWD"/.artifact/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "::error::expected exactly one tarball in .artifact/, found $#: $*"
+            exit 1
+          fi
+          tarball="$1"
           echo "path=$tarball" >> "$GITHUB_OUTPUT"
           echo "Publishing tarball: $tarball"
 
@@ -554,3 +537,52 @@ jobs:
 
           echo "Publishing $NAME@$VERSION to GitHub Packages from $TARBALL..."
           npm publish "$TARBALL" --access public --registry "$EXPECTED_REGISTRY"
+
+  # Single failure notifier for the whole release (build + both publish legs). A
+  # SEPARATE terminal job — `needs:` every real job and `if: failure()` — so a
+  # failure in ANY leg opens/updates the tracking issue, including the GitHub
+  # Packages mirror (whose failure lands after the npm leg has already gone green,
+  # and so was previously silent). A release runs post-merge with nobody watching
+  # a PR, so without this an unattended failure is easy to miss. `if: failure()`
+  # stays false when the mirror is merely skipped (publish-github-packages: false
+  # or a no-op merge), so it never fires on a clean run. Only needs `issues:
+  # write` — no checkout/publish identity here.
+  notify-failure:
+    name: 🚨 Notify on release failure
+    needs: [build, release, publish-github-packages]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: 🚨 Open or update the tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="🚨 Release workflow failed"
+          body=$(printf '%s\n' \
+            "The Release workflow failed on \`${GITHUB_REF_NAME}\`." \
+            "" \
+            "- Run: $RUN_URL" \
+            "" \
+            "## Likely cause & fix" \
+            "- **Build & pack** — see the failing step in the run log." \
+            "- **npm publish (OIDC)** — Trusted Publishing hiccup, or the version is already published. The publish step is idempotent, so a re-run usually clears a transient failure." \
+            "- **GitHub Packages mirror** — token/registry hiccup; the publish step is idempotent. Re-run failed jobs to retry just the mirror (this reuses the release job's publish decision)." \
+            "" \
+            "Re-run from the Actions tab once resolved. This issue auto-comments on repeat failures instead of opening duplicates."
+          )
+          # Search the text portion only — GitHub's full-text search indexes emoji
+          # unreliably, so matching on 🚨 risks opening a duplicate every failure.
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "Release workflow failed in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Appending to existing failure issue #$existing."
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            echo "Opening a new failure issue."
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi
