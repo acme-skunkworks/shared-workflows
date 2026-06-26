@@ -1,0 +1,32 @@
+name: Validate changelog
+description: >-
+  Validate the repo's dated changelog (format + completeness) by running the
+  consumer's changelog-validation command. Assumes setup-project has already
+  installed dependencies (ADR 0001 §5.7).
+
+# Layer-1 mix-in: a single step. The estate's dated-changelog validator ships
+# with each repo as a package script, so this action runs that script via the
+# consumer's toolchain — no third-party `uses:` to pin. Trust boundary: SK-422.
+#
+# The validator is named by a `script` input (a pnpm script name), NOT a free
+# shell command: `pnpm run "$script"` passes it as a single argument, so the
+# input can never be reinterpreted as shell (no `eval`).
+
+inputs:
+  script:
+    description: >-
+      pnpm script that validates the dated changelog (run as `pnpm run <script>`).
+      If a repo names its validator differently, override this.
+    required: false
+    default: changelog:validate
+
+runs:
+  using: composite
+  steps:
+    - name: 🗒️ Validate changelog
+      shell: bash
+      env:
+        CHANGELOG_SCRIPT: ${{ inputs.script }}
+      run: |
+        set -euo pipefail
+        pnpm run "$CHANGELOG_SCRIPT"

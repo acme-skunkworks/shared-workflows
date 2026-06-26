@@ -1,0 +1,37 @@
+name: Lint Markdown
+description: >-
+  Run markdownlint-cli2 over the repo's Markdown. Auto-discovers the consumer's
+  `.markdownlint-cli2.jsonc` (which extends `@acme-skunkworks/markdownlint-config`).
+  Assumes setup-project has already installed dependencies (ADR 0001 §5.7).
+
+# Layer-1 mix-in: a single step. markdownlint-cli2 is the consumer's
+# devDependency — invoked via `pnpm exec`, so no third-party `uses:` to pin.
+# Trust boundary: SK-422.
+
+inputs:
+  globs:
+    description: >-
+      Newline-separated globs passed to markdownlint-cli2 (one per line; `!`
+      negates). Defaults to the estate pattern (all Markdown, excluding
+      node_modules).
+    required: false
+    default: |
+      **/*.md
+      !**/node_modules/**
+
+runs:
+  using: composite
+  steps:
+    - name: 📝 Lint Markdown
+      shell: bash
+      env:
+        MD_GLOBS: ${{ inputs.globs }}
+      run: |
+        set -euo pipefail
+        # Read globs as plain data (one per line) into an array — no `eval`, so a
+        # glob value can never be reinterpreted as shell.
+        globs=()
+        while IFS= read -r glob; do
+          [ -n "$glob" ] && globs+=("$glob")
+        done <<<"$MD_GLOBS"
+        pnpm exec markdownlint-cli2 "${globs[@]}"

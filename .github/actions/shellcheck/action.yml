@@ -1,0 +1,53 @@
+name: ShellCheck
+description: >-
+  Lint the repo's shell scripts with ShellCheck. Uses the binary preinstalled on
+  GitHub-hosted ubuntu runners — no install step, no third-party `uses:` to pin
+  (ADR 0001 §5.7). Trust boundary: SK-422.
+
+inputs:
+  paths:
+    description: >-
+      Space-separated paths/globs to check. Empty (default) discovers tracked
+      `*.sh`/`*.bash` files via `git ls-files`.
+    required: false
+    default: ""
+  severity:
+    description: Minimum severity to report (`error` | `warning` | `info` | `style`).
+    required: false
+    default: style
+
+runs:
+  using: composite
+  steps:
+    - name: 🐚 Run ShellCheck
+      shell: bash
+      env:
+        SC_PATHS: ${{ inputs.paths }}
+        SEVERITY: ${{ inputs.severity }}
+      run: |
+        set -euo pipefail
+        shellcheck --version
+        # Build the target list as an array so paths with spaces survive intact.
+        files=()
+        if [ -n "$SC_PATHS" ]; then
+          # Word-splitting on $SC_PATHS is intentional (space-separated paths).
+          # shellcheck disable=SC2206
+          paths=($SC_PATHS)
+          for p in "${paths[@]}"; do
+            if [ -d "$p" ]; then
+              while IFS= read -r -d '' f; do files+=("$f"); done \
+                < <(find "$p" -type f \( -name '*.sh' -o -name '*.bash' \) -print0)
+            else
+              files+=("$p")
+            fi
+          done
+        else
+          # Discover tracked shell scripts; NUL-delimited, robust to odd names.
+          while IFS= read -r -d '' f; do files+=("$f"); done \
+            < <(git ls-files -z '*.sh' '*.bash')
+        fi
+        if [ "${#files[@]}" -eq 0 ]; then
+          echo "No shell scripts found to check."
+          exit 0
+        fi
+        shellcheck --severity="$SEVERITY" "${files[@]}"

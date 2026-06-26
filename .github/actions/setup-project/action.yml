@@ -1,0 +1,66 @@
+name: Setup project
+description: >-
+  Install pnpm + Node (from .nvmrc) with a lockfile-keyed pnpm store cache, then
+  `pnpm install`. The portable distillate of Tempest's setup-project — the
+  keystone every other mix-in builds on (ADR 0001 §5.2).
+
+# Layer-1 composite action (ADR 0001 §5.7): runs as steps INSIDE the calling
+# job, so there is no extra runner or install — setup is paid once and every
+# downstream check (eslint, typecheck, vitest, …) reuses it. The calling job is
+# expected to have already checked out the consumer repo.
+#
+# Single-package scale (§5.2): `cache: pnpm` keys the pnpm store on the lockfile
+# hash and saves it in a post-job step (one setup per workflow). The ADR's
+# "restore-only" intent is about avoiding the multi-package "dedicated save job"
+# contention dance — that dedicated job is deliberately omitted here; the single
+# built-in post-job save is what populates the cache.
+#
+# Trust boundary (SK-422): every `uses:` is SHA-pinned; no network beyond the
+# pinned setup actions.
+
+inputs:
+  node-version-file:
+    description: File to read the Node version from (passed to actions/setup-node).
+    required: false
+    default: .nvmrc
+  install:
+    description: Whether to run `pnpm install`. Set false to set up the toolchain only.
+    required: false
+    default: "true"
+  frozen-lockfile:
+    description: >-
+      Pass `--frozen-lockfile` to `pnpm install` (fail if the lockfile is stale).
+      Keep true in CI for reproducibility.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: 📦 Install pnpm
+      # Version is read from the consumer's package.json `packageManager` field,
+      # so it stays pinned per-repo without an input here.
+      uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4.4.0
+      with:
+        run_install: false
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      with:
+        node-version-file: ${{ inputs.node-version-file }}
+        # pnpm store cache, keyed on the lockfile hash (restores at job start,
+        # saves in a post-job step).
+        cache: pnpm
+
+    - name: 📥 Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      env:
+        FROZEN: ${{ inputs.frozen-lockfile }}
+      run: |
+        set -euo pipefail
+        if [ "$FROZEN" = "true" ]; then
+          pnpm install --frozen-lockfile
+        else
+          pnpm install
+        fi

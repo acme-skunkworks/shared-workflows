@@ -1,0 +1,32 @@
+name: ESLint
+description: >-
+  Run ESLint over the repo using the consumer's flat config (which extends
+  `@acme-skunkworks/eslint-config`). Assumes setup-project has already installed
+  dependencies (ADR 0001 §5.7).
+
+# Layer-1 mix-in: a single step in the calling job. ESLint and its config are
+# the consumer's devDependencies — this action only invokes the locally
+# installed binary via `pnpm exec`, so it pins no third-party `uses:`.
+# Trust boundary: SK-422.
+
+inputs:
+  args:
+    description: >-
+      Arguments passed to `eslint` (paths/globs and flags). Defaults to the repo
+      root; ESLint's flat config resolves the file set from there.
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: 🧹 Run ESLint
+      shell: bash
+      env:
+        ESLINT_ARGS: ${{ inputs.args }}
+      run: |
+        set -euo pipefail
+        # Word-splitting on $ESLINT_ARGS is intentional — it carries multiple
+        # paths/flags.
+        # shellcheck disable=SC2086
+        pnpm exec eslint $ESLINT_ARGS

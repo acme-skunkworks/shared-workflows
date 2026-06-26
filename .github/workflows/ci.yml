@@ -67,7 +67,12 @@ jobs:
       - name: 📝 Run yamllint
         run: |
           set -euo pipefail
-          python3 -m pip install --user --quiet yamllint==1.37.1
+          # `--break-system-packages` is the PEP 668 escape hatch: a no-op on the
+          # current runner's Python, but required once `ubuntu-latest` is a distro
+          # Python that marks itself externally-managed (Ubuntu 24.04). Mirrors the
+          # lint-yaml composite action so the two never drift.
+          python3 -m pip install --user --quiet --break-system-packages \
+            yamllint==1.37.1
           "$HOME/.local/bin/yamllint" --version
           "$HOME/.local/bin/yamllint" .
 
