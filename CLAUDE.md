@@ -42,6 +42,7 @@ messages, PR titles/bodies, and any user-facing strings.
 │   ├── reusable-validate-pr-title.yml   # PRODUCT: conventional PR title
 │   ├── reusable-lint.yml                # PRODUCT: coarse lint bundle (Layer 2)
 │   ├── reusable-build-test.yml          # PRODUCT: coarse build/test bundle (Layer 2)
+│   ├── reusable-release.yml             # PRODUCT: build-once → npm OIDC + Packages mirror (Layer 2)
 │   ├── claude.yml                       # self-host: inline @claude on THIS repo
 │   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
 │   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
@@ -74,6 +75,44 @@ messages, PR titles/bodies, and any user-facing strings.
   what populates `github.action_path` so `lint-yaml`'s `.yamllint.yml` injection
   resolves. `reusable-lint.yml` pins to the actions' commit (no release tag exists
   yet); the release process maintains it once tags land.
+
+## The release workflow (`reusable-release.yml`, SK-417)
+
+`reusable-release.yml` ports the estate's hardened release flow (build-once →
+npm OIDC Trusted Publishing → GitHub Packages mirror → tag + GitHub release;
+ASW-328/326/323) into a `workflow_call`. Unlike the lint/build-test bundles it
+publishes, so it carries some unique rules:
+
+- **No `secrets:` block.** The npm leg authenticates via OIDC Trusted Publishing
+  (no `NPM_TOKEN`); the Packages leg, `gh release create` and the failure issue
+  all use the automatic `GITHUB_TOKEN`. Only **permissions** cross the boundary —
+  the caller grants the superset (`contents`/`id-token`/`issues`/`packages`/
+  `attestations: write`); each reusable job narrows from there.
+- **npm validates the _caller_, not this callee.** npm Trusted Publishing matches
+  the OIDC `workflow_ref` (the consumer's own `release.yml` caller filename +
+  repo + environment), not the reusable `job_workflow_ref`. So each consuming
+  package registers **its own caller filename** as the npmjs.com Trusted
+  Publisher, and `id-token: write` must sit on **both** the caller job and the
+  publish jobs. Unproven by inspection — verify with one live publish before
+  estate rollout.
+- **Consumer prerequisite — branch-protected `npm-release` environment.** A
+  reusable workflow's `environment:` resolves in the **caller** repo; each
+  consumer must define `npm-release` restricted to the release branch (ASW-326).
+  If it is absent GitHub silently auto-creates it **unprotected**, losing the ref
+  gate — so it is a hard prerequisite, not a default.
+- **Caller owns the trigger; no `workflow_dispatch`.** `workflow_call` cannot own
+  `on: push`/`concurrency`; the caller sets push-to-`main` +
+  `cancel-in-progress: false` and must **not** add `workflow_dispatch` — a
+  dispatched run satisfies the same npm OIDC subject as a legitimate post-merge
+  push and could publish a poisoned tarball with valid provenance (ASW-326).
+- **The two publish scripts are inlined** (not the consumer's per-repo
+  `infrastructure/scripts/publish-*.sh`), centralising the logic and killing the
+  drift SK-384 targets. The `load-repo-config` outputs the per-repo copy reads
+  (registries, scope, node-version file) become `with:` inputs instead.
+- **Build reuses Layer-1** `setup-project` + `build`; the publish legs are
+  hand-rolled (they need `setup-node`'s `registry-url`/`scope`) and pin
+  `pnpm/action-setup` + `setup-node` to the **same SHAs** `setup-project` uses, so
+  the toolchain cannot drift between the build and the publish.
 
 ## Composite actions (Layer 1)
 

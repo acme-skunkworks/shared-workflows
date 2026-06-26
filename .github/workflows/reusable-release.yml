@@ -1,0 +1,588 @@
+name: Reusable / Release
+
+# Reusable (workflow_call) version of the estate's hardened release flow — the
+# build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag +
+# GitHub release pipeline (ports ASW-328 / ASW-326 / ASW-323 into one source of
+# truth, replacing the per-repo `release.yml` copies that would otherwise drift,
+# SK-384/SK-417).
+#
+# Three jobs, each least-privileged:
+#   1. build   — pnpm install + build + `npm pack` in a job holding NO publish
+#                credential. The single tarball it packs is the exact artefact
+#                both publish legs ship, so the npm tarball, the GitHub Packages
+#                tarball and the attested digest are byte-identical, and no
+#                build-time code ever runs next to a mintable OIDC token (ASW-328).
+#   2. release — npm leg. OIDC Trusted Publishing (no NPM_TOKEN), `--provenance`,
+#                version-vs-tag gate, then tag + GitHub release.
+#   3. publish-github-packages — secondary mirror (ASW-323), a SEPARATE job so
+#                `packages: write` is never granted to the npm leg; provenance via
+#                a GitHub-native attestation over the same tarball.
+#
+# NO `secrets:` BLOCK. The npm leg authenticates via OIDC Trusted Publishing, so
+# there is no `NPM_TOKEN` to pass; the GitHub Packages leg, `gh release create`
+# and the failure-notification all run on the automatic `GITHUB_TOKEN`, which a
+# reusable workflow receives without `secrets: inherit`. Only PERMISSIONS cross
+# the caller boundary — declared per job below, capped by the caller/org token
+# settings.
+#
+# npm TRUSTED PUBLISHING THROUGH A REUSABLE WORKFLOW: npm validates the OIDC
+# `workflow_ref` claim — the CALLER's workflow filename (e.g. `release.yml`) +
+# repo + environment — NOT this reusable callee (`job_workflow_ref`). So each
+# consuming package configures its npmjs.com Trusted Publisher against ITS OWN
+# caller filename, and `id-token: write` must be present on BOTH the caller job
+# (`uses:` this workflow) and the publish jobs here. This cannot be proven by
+# inspection — verify with one live publish before estate rollout (SK-417).
+#
+# CONSUMER PREREQUISITE — branch-protected `npm-release` environment: a reusable
+# workflow's `environment:` resolves in the CALLER repo. Each consumer must
+# define `npm-release` and restrict it to the release branch (ASW-326 ref gate).
+# If the environment is absent GitHub silently auto-creates it UNPROTECTED on
+# first run, losing the restriction — so this is a hard prerequisite, not a
+# default.
+#
+# CALLER OWNS THE TRIGGER: `workflow_call` cannot own `on: push` or
+# `concurrency`. The caller stub sets push-to-`main` + `cancel-in-progress: false`
+# (queue releases) and MUST NOT add `workflow_dispatch` — a dispatched run can
+# target any ref but satisfies the same npm OIDC subject as a legitimate
+# post-merge push, so it could publish a poisoned tarball with valid provenance
+# (ASW-326). Re-run a failed release via "Re-run jobs" on the original push run.
+#
+# SAME-REPO ACTION REFERENCES: a reusable workflow CANNOT reach its sibling
+# actions via a local `./.github/actions/…` path — inside a `workflow_call` job a
+# `./` path resolves against the CALLER's workspace, not this repo (community
+# #18601), and `sha_pinning_required` rejects an unpinned local ref anyway. So
+# `setup-project` and `build` below are referenced by full cross-repo path,
+# SHA-pinned. The two publish legs are hand-rolled (they need `setup-node`'s
+# `registry-url`/`scope`, which `setup-project` does not expose) and pin
+# pnpm/action-setup + setup-node to the SAME SHAs `setup-project` uses, so the
+# toolchain cannot drift between the build and the publish.
+#
+# This repo does NOT dogfood this workflow (it publishes nothing, and the same
+# circularity that inlines ci.yml/claude.yml applies); consumers exercise it.
+#
+# Consume from another repo (SHA-pinned + Dependabot — see README). The caller
+# grants the SUPERSET of the per-job permissions below:
+#
+#   name: Release
+#   on:
+#     push:
+#       branches: [main]   # NO workflow_dispatch (ASW-326)
+#   concurrency:
+#     group: ${{ github.workflow }}-${{ github.ref }}
+#     cancel-in-progress: false
+#   jobs:
+#     release:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-release.yml@<sha>
+#       with:
+#         npm-scope: "@acme-skunkworks"
+#       permissions:
+#         contents: write
+#         id-token: write
+#         issues: write
+#         packages: write
+#         attestations: write
+
+on:
+  workflow_call:
+    inputs:
+      npm-scope:
+        description: >-
+          The package's npm scope (e.g. `@acme-skunkworks`), used for the GitHub
+          Packages `setup-node` scope→registry mapping.
+        type: string
+        required: true
+      node-version-file:
+        description: File to read the Node version from (passed to setup-project + setup-node).
+        type: string
+        required: false
+        default: .nvmrc
+      npm-registry-url:
+        description: Registry the npm leg publishes to (OIDC Trusted Publishing).
+        type: string
+        required: false
+        default: https://registry.npmjs.org
+      github-packages-registry-url:
+        description: >-
+          GitHub Packages registry for the mirror leg. Asserted against the known
+          host before publishing (the ephemeral GITHUB_TOKEN must never be sent to
+          a data-driven host — ASW-330).
+        type: string
+        required: false
+        default: https://npm.pkg.github.com
+      npm-version:
+        description: >-
+          npm CLI version installed on the npm leg. Trusted Publishing requires
+          ≥11.5.1; the Node 22 runner still ships npm 10.x, so the upgrade stays.
+        type: string
+        required: false
+        default: 11.14.1
+      release-branch:
+        description: Branch the release publishes from (ref guard + environment gate).
+        type: string
+        required: false
+        default: main
+      environment:
+        description: >-
+          Deployment environment for the publish jobs. Must exist in the consumer
+          repo and be restricted to the release branch (ASW-326).
+        type: string
+        required: false
+        default: npm-release
+      build-script:
+        description: pnpm script that builds the package before packing.
+        type: string
+        required: false
+        default: build
+      publish-github-packages:
+        description: Publish the secondary GitHub Packages mirror after the npm leg.
+        type: boolean
+        required: false
+        default: true
+      changelog-dir:
+        description: >-
+          Directory of dated changelog entries the GitHub release notes are
+          sourced from (entries whose `version:` frontmatter matches the release).
+        type: string
+        required: false
+        default: changelog
+      tag-prefix:
+        description: Prefix for the git tag and GitHub release name (e.g. `v1.2.3`).
+        type: string
+        required: false
+        default: v
+      working-directory:
+        description: >-
+          Directory of the package to pack/version-gate/publish. Defaults to the
+          repo root; single-package insurance for a future monorepo layout.
+        type: string
+        required: false
+        default: .
+      provenance:
+        description: >-
+          Attach npm provenance on the npm leg (`--provenance`). Escape hatch if a
+          registry rejects provenance; leave on for npmjs.com.
+        type: boolean
+        required: false
+        default: true
+
+# Deny all token scopes at the workflow root; each job below grants only what it
+# needs (least privilege; zizmor-clean).
+permissions: {}
+
+jobs:
+  # Build-time code (pnpm install + build + npm pack) runs ONLY here, in a job
+  # that holds no publish credential (ASW-328). The single tarball this job packs
+  # is the exact artefact both publish legs download and ship.
+  build:
+    name: 🏗️ Build & pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # Checkout + build only — no publish identity here.
+    # setup-project's `pnpm install` would otherwise run the consumer's
+    # `prepare`/husky hook in CI (mirrors reusable-build-test.yml).
+    env:
+      HUSKY: 0
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false # Nothing git-pushes; avoid artipacked exposure.
+
+      - name: 🧰 Set up project
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+
+      - name: 🏗️ Build
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
+        with:
+          script: ${{ inputs.build-script }}
+
+      # Pack once. The published tarball (both registries) and the attested digest
+      # are all this exact file — consumers can `gh attestation verify <tarball>`.
+      # --ignore-scripts skips the dev-only `prepare` (husky); the published
+      # tarball never needs git hooks. Pack into an isolated empty dir, then assert
+      # exactly one tarball before trusting it.
+      - name: 📦 Pack tarball
+        id: pack
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -euo pipefail
+          rm -rf .pack && mkdir .pack
+          npm pack --ignore-scripts --silent --pack-destination .pack
+          set -- .pack/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "::error::expected exactly one packed tarball in .pack/, found $#: $*"
+            exit 1
+          fi
+          tarball="$PWD/$1"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+          echo "Packed $tarball"
+
+      - name: ⬆️ Upload tarball artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-tarball
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          # Tight TTL keeps the credential-adjacent artifact around only as long
+          # as a release needs it. Re-running an isolated publish job >24h later
+          # finds it gone — re-run the whole workflow to rebuild it.
+          retention-days: 1
+
+  release:
+    name: 🚀 Release (npm)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Branch-restricted environment (ASW-326): the consumer defines `npm-release`
+    # to permit deployments ONLY from the release branch, so a non-release ref is
+    # rejected by GitHub before the OIDC token is mintable.
+    environment: ${{ inputs.environment }}
+    outputs:
+      # Reused by publish-github-packages so it gates on the same condition
+      # without re-detecting (true = version bumped, not yet tagged = publish).
+      should_publish: ${{ steps.gate.outputs.publish }}
+    permissions:
+      contents: write # Git tags + GitHub releases on publish
+      id-token: write # OIDC for npm Trusted Publishing + provenance
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0 # Full history + tags so the version-vs-tag gate can resolve.
+          persist-credentials: false # Tags/release go via the gh API, npm via OIDC.
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4.4.0
+        with:
+          run_install: false
+
+      - name: 🟢 Setup Node.js (npm registry)
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          # No `pnpm install` here (build did it); cache: pnpm still warms the
+          # store the npm-upgrade step pulls from.
+          cache: pnpm
+          registry-url: ${{ inputs.npm-registry-url }}
+
+      - name: ⬆️ Upgrade npm for Trusted Publishing
+        # Trusted Publishing requires npm ≥11.5.1; the runner ships npm 10.x. The
+        # bundled npm is broken on self-upgrade, so install via pnpm; setup-node
+        # prepends its tool-cache bin AFTER pnpm/action-setup, so add PNPM_HOME to
+        # GITHUB_PATH or the bundled npm wins on PATH (ASW-173/174).
+        env:
+          NPM_VERSION: ${{ inputs.npm-version }}
+        run: |
+          set -euo pipefail
+          pnpm add -g "npm@${NPM_VERSION}"
+          echo "$PNPM_HOME" >> "$GITHUB_PATH"
+          echo "Upgraded npm at $PNPM_HOME/npm: $("$PNPM_HOME/npm" --version)"
+
+      # Publish-only: versioning (the release PR bumping package.json +
+      # .release-please-manifest.json) is owned by the private release-orchestrator
+      # running release-please. This keyless gate replaces a changeset scan: we
+      # publish iff package.json's version has no matching git tag yet. On a
+      # feature merge the version is unchanged → its tag exists → clean no-op; on
+      # the release-PR merge the version is freshly bumped → no tag → we publish.
+      - name: 🔎 Detect release (version vs tag)
+        id: gate
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          TAG_PREFIX: ${{ inputs.tag-prefix }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          tag="${TAG_PREFIX}${version}"
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            publish=false
+          else
+            publish=true
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "version: $version; tag $tag exists: $([ "$publish" = false ] && echo yes || echo no); publish: $publish"
+
+      # Download the exact tarball built in the unprivileged `build` job (ASW-328)
+      # — this job never builds from source, so no build-time code runs alongside
+      # the npm OIDC credential. Only on a real release (the publish + tag steps
+      # below gate on the same condition), so a no-op feature merge skips it.
+      - name: ⬇️ Download tarball artifact
+        if: steps.gate.outputs.publish == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-tarball
+          path: ./.artifact
+
+      - name: 🔎 Resolve tarball path
+        id: tb
+        if: steps.gate.outputs.publish == 'true'
+        run: |
+          set -euo pipefail
+          # Assert exactly one tarball (mirrors the pack step) so a corrupt or
+          # multi-file artifact fails loudly here, not as a confusing multi-line
+          # $TARBALL "no such file" mid-publish.
+          set -- "$PWD"/.artifact/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "::error::expected exactly one tarball in .artifact/, found $#: $*"
+            exit 1
+          fi
+          tarball="$1"
+          echo "path=$tarball" >> "$GITHUB_OUTPUT"
+          echo "Publishing tarball: $tarball"
+
+      # Inlined from the estate's publish-via-raw-npm.sh (SK-417 centralises it so
+      # consumers carry no copy). Calls npm directly (not `pnpm publish`): pnpm's
+      # publish path fails OIDC Trusted Publishing even with npm 11.x on PATH
+      # (ASW-174). Publishes the prebuilt $TARBALL, not a re-pack. Idempotent: a
+      # genuine "already published" hit exits 0; only a non-404 probe failure
+      # aborts. No NPM_TOKEN — Trusted Publishing via OIDC; provenance is derived
+      # from the GHA OIDC token + run context, so it works on a prebuilt tarball.
+      - name: 🚀 Publish (npm, OIDC Trusted Publishing)
+        if: >-
+          github.event_name == 'push'
+          && github.ref == format('refs/heads/{0}', inputs.release-branch)
+          && steps.gate.outputs.publish == 'true'
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          TARBALL: ${{ steps.tb.outputs.path }}
+          PROVENANCE: ${{ inputs.provenance }}
+          HUSKY: 0
+        run: |
+          set -euo pipefail
+          : "${PNPM_HOME:?PNPM_HOME is not set; pnpm/action-setup must run first}"
+          : "${TARBALL:?TARBALL is not set; the build job must npm pack and upload the tarball first}"
+
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+
+          # Probe whether this version already exists. Tell a genuine 404 ("not
+          # published yet" → publish) apart from a transient/auth failure (→ abort
+          # before the OIDC exchange). npm can exit 0 with empty output for
+          # unresolved descriptors, so a bare exit-0 isn't proof the version exists.
+          set +e
+          view_output=$("$PNPM_HOME/npm" view "$NAME@$VERSION" version 2>&1)
+          view_status=$?
+          set -e
+          if [ "$view_status" -eq 0 ] && [ -n "$view_output" ]; then
+            echo "Already published: $NAME@$VERSION — skipping."
+            exit 0
+          fi
+          if [ "$view_status" -ne 0 ] && ! printf '%s' "$view_output" | grep -qiE 'E404|not found'; then
+            echo "npm view failed for $NAME@$VERSION (exit $view_status) and the error is not a 404 — aborting:" >&2
+            printf '%s\n' "$view_output" >&2
+            exit 1
+          fi
+
+          prov=""
+          [ "$PROVENANCE" = "true" ] && prov="--provenance"
+          echo "Publishing $NAME@$VERSION from $TARBALL via $PNPM_HOME/npm..."
+          # shellcheck disable=SC2086 # $prov is an intentional optional flag.
+          "$PNPM_HOME/npm" publish "$TARBALL" --access public $prov
+
+      # npm publish creates no git tag or GitHub release on its own. Idempotent:
+      # skips if the release already exists, so re-runs are safe. Notes come from
+      # the dated changelog/ entries this release stamped (skip-changelog leaves
+      # no root CHANGELOG.md); one release PR can bundle several merges, so every
+      # matching entry's body is concatenated.
+      - name: 🏷️ Tag + GitHub release
+        if: >-
+          github.event_name == 'push'
+          && github.ref == format('refs/heads/{0}', inputs.release-branch)
+          && steps.gate.outputs.publish == 'true'
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_PREFIX: ${{ inputs.tag-prefix }}
+          CHANGELOG_DIR: ${{ inputs.changelog-dir }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          tag="${TAG_PREFIX}${version}"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists — nothing to do."
+            exit 0
+          fi
+
+          notes=""
+          if [ -d "$CHANGELOG_DIR" ]; then
+            for f in "$CHANGELOG_DIR"/*.md; do
+              [ -e "$f" ] || continue
+              [ "$(basename "$f")" = "README.md" ] && continue
+              v="$(awk -F': *' '/^version:/{gsub(/["'\'' ]/,"",$2); print $2; exit}' "$f")"
+              [ "$v" = "$version" ] || continue
+              body="$(awk 'BEGIN{d=0} /^---[[:space:]]*$/{d++; next} d>=2{print}' "$f")"
+              notes="${notes}${notes:+$'\n\n'}${body}"
+            done
+          fi
+          [ -z "$(printf '%s' "$notes" | tr -d '[:space:]')" ] && notes="See the ${CHANGELOG_DIR}/ entry for ${tag}."
+
+          gh release create "$tag" \
+            --title "$tag" \
+            --target "$GITHUB_SHA" \
+            --notes "$notes"
+          echo "Created $tag at $GITHUB_SHA."
+
+  # Secondary publish target (ASW-323). A SEPARATE job so `packages: write` is
+  # scoped here and never granted to the `release` job. Runs only after npm
+  # publish succeeds (needs: release) and on the same gate + ref guard +
+  # environment. GitHub Packages has no OIDC Trusted-Publisher flow, so this leg
+  # authenticates with the ephemeral per-job GITHUB_TOKEN; provenance is supplied
+  # out-of-band by a GitHub-native attestation over the exact tarball the npm leg
+  # shipped — never re-built from source.
+  publish-github-packages:
+    name: 📦 Publish to GitHub Packages
+    needs: release
+    if: >-
+      needs.release.outputs.should_publish == 'true'
+      && inputs.publish-github-packages
+      && github.event_name == 'push'
+      && github.ref == format('refs/heads/{0}', inputs.release-branch)
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # Checkout only
+      packages: write # Publish to GitHub Packages
+      id-token: write # Sigstore signing for the build-provenance attestation
+      attestations: write # Upload the attestation to GitHub
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false # Publish/attest only — never git-pushes.
+
+      # GitHub Packages variant: scoped .npmrc pointing at npm.pkg.github.com. No
+      # pnpm/build step (publishes the prebuilt artifact, ASW-328) and no
+      # npm-upgrade (token auth has no npm-version floor).
+      - name: 🟢 Setup Node.js (GitHub Packages)
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          registry-url: ${{ inputs.github-packages-registry-url }}
+          scope: ${{ inputs.npm-scope }}
+
+      - name: ⬇️ Download tarball artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-tarball
+          path: ./.artifact
+
+      - name: 🔎 Resolve tarball path
+        id: tb
+        run: |
+          set -euo pipefail
+          # Assert exactly one tarball (mirrors the pack step) so a corrupt or
+          # multi-file artifact fails loudly here, not mid-attest/publish.
+          set -- "$PWD"/.artifact/*.tgz
+          if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
+            echo "::error::expected exactly one tarball in .artifact/, found $#: $*"
+            exit 1
+          fi
+          tarball="$1"
+          echo "path=$tarball" >> "$GITHUB_OUTPUT"
+          echo "Publishing tarball: $tarball"
+
+      - name: 🔏 Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: ${{ steps.tb.outputs.path }}
+
+      # Inlined from the estate's publish-to-github-packages.sh (SK-417). Hard-code
+      # the publish host and fail closed if the input drifts (ASW-330): the
+      # ephemeral GITHUB_TOKEN is sent as a bearer credential, so the host must
+      # never be data-driven. Idempotent against the explicit registry. No
+      # --provenance (that targets npmjs.org's attestation API only); the
+      # attestation above is the GitHub-native equivalent.
+      - name: 📦 Publish to GitHub Packages
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PACKAGES_REGISTRY_URL: ${{ inputs.github-packages-registry-url }}
+          TARBALL: ${{ steps.tb.outputs.path }}
+        run: |
+          set -euo pipefail
+          : "${NODE_AUTH_TOKEN:?NODE_AUTH_TOKEN is not set; setup-node (GitHub Packages) must run first}"
+          : "${GITHUB_PACKAGES_REGISTRY_URL:?GITHUB_PACKAGES_REGISTRY_URL is not set}"
+          : "${TARBALL:?TARBALL is not set; the build job must npm pack and upload the tarball first}"
+
+          readonly EXPECTED_REGISTRY="https://npm.pkg.github.com"
+          if [ "$GITHUB_PACKAGES_REGISTRY_URL" != "$EXPECTED_REGISTRY" ]; then
+            echo "Refusing to publish: GITHUB_PACKAGES_REGISTRY_URL='$GITHUB_PACKAGES_REGISTRY_URL' is not the expected '$EXPECTED_REGISTRY'." >&2
+            exit 1
+          fi
+
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+
+          # Pin the registry explicitly rather than leaning on the scoped .npmrc: a
+          # misconfigured scope would silently send `npm view` to public npm —
+          # where the version exists — so the skip path would fire forever and
+          # GitHub Packages would go permanently stale (ASW-307).
+          set +e
+          view_output=$(npm view "$NAME@$VERSION" version --registry "$EXPECTED_REGISTRY" 2>&1)
+          view_status=$?
+          set -e
+          if [ "$view_status" -eq 0 ] && [ -n "$view_output" ]; then
+            echo "Already published to GitHub Packages: $NAME@$VERSION — skipping."
+            exit 0
+          fi
+          if [ "$view_status" -ne 0 ] && ! printf '%s' "$view_output" | grep -qiE 'E404|not found'; then
+            echo "npm view failed for $NAME@$VERSION (exit $view_status) and the error is not a 404 — aborting:" >&2
+            printf '%s\n' "$view_output" >&2
+            exit 1
+          fi
+
+          echo "Publishing $NAME@$VERSION to GitHub Packages from $TARBALL..."
+          npm publish "$TARBALL" --access public --registry "$EXPECTED_REGISTRY"
+
+  # Single failure notifier for the whole release (build + both publish legs). A
+  # SEPARATE terminal job — `needs:` every real job and `if: failure()` — so a
+  # failure in ANY leg opens/updates the tracking issue, including the GitHub
+  # Packages mirror (whose failure lands after the npm leg has already gone green,
+  # and so was previously silent). A release runs post-merge with nobody watching
+  # a PR, so without this an unattended failure is easy to miss. `if: failure()`
+  # stays false when the mirror is merely skipped (publish-github-packages: false
+  # or a no-op merge), so it never fires on a clean run. Only needs `issues:
+  # write` — no checkout/publish identity here.
+  notify-failure:
+    name: 🚨 Notify on release failure
+    needs: [build, release, publish-github-packages]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: 🚨 Open or update the tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="🚨 Release workflow failed"
+          body=$(printf '%s\n' \
+            "The Release workflow failed on \`${GITHUB_REF_NAME}\`." \
+            "" \
+            "- Run: $RUN_URL" \
+            "" \
+            "## Likely cause & fix" \
+            "- **Build & pack** — see the failing step in the run log." \
+            "- **npm publish (OIDC)** — Trusted Publishing hiccup, or the version is already published. The publish step is idempotent, so a re-run usually clears a transient failure." \
+            "- **GitHub Packages mirror** — token/registry hiccup; the publish step is idempotent. Re-run failed jobs to retry just the mirror (this reuses the release job's publish decision)." \
+            "" \
+            "Re-run from the Actions tab once resolved. This issue auto-comments on repeat failures instead of opening duplicates."
+          )
+          # Search the text portion only — GitHub's full-text search indexes emoji
+          # unreliably, so matching on 🚨 risks opening a duplicate every failure.
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "Release workflow failed in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Appending to existing failure issue #$existing."
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            echo "Opening a new failure issue."
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi
