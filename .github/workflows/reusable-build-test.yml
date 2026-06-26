@@ -1,0 +1,184 @@
+name: Reusable / Build & Test
+
+# Reusable (workflow_call) version of the estate's build/test bundle — the coarse
+# Layer-2 convenience workflow (ADR 0001 §5.7). One job pays `setup-project`
+# ONCE, then composes the shared Layer-1 build/test composite actions: build,
+# typecheck (tsc), test-vitest and the infra mix-ins shellcheck + test-bats.
+# This is the `🔬 Build & Lint`-equivalent work, MINUS the gate naming — the gate
+# lives in each consumer's local `go/no-go` aggregator (SK-424), so this workflow
+# deliberately does NOT name itself the gate.
+#
+# The `build` lane is a VERIFICATION build: `pnpm run build` proves the package
+# compiles/bundles cleanly, and its output is discarded. The published artefact
+# is rebuilt fresh in the release job (reusable-release.yml, SK-417) with OIDC
+# Trusted Publishing + provenance — never reused from here (ADR 0001 §4).
+#
+# Each sub-check has a boolean opt-out input (`build: false`, `typecheck: false`,
+# …) — §5.7's first opt-out rung: drop a check without leaving the bundle. A repo
+# without a `tsc` script yet (e.g. agent-skills pre-SK-394) sets `typecheck:
+# false`; a config-only package with no build artefact sets `build: false`. The
+# other inputs are thin pass-throughs to the composite actions, fed in a caller
+# stub from the consumer's `repo-config.yaml`.
+#
+# SAME-REPO ACTION REFERENCES: a reusable workflow CANNOT reach its sibling
+# actions via a local `./.github/actions/…` path — inside a `workflow_call` job
+# a `./` path resolves against the CALLER's workspace, not this repo (community
+# #18601), and `sha_pinning_required` rejects an unpinned local ref anyway. So
+# each action below is referenced by its full cross-repo path, SHA-pinned.
+#
+# This repo does NOT dogfood this workflow (the same circularity that inlines
+# ci.yml/claude.yml); it is exercised by consumers, where the pinned SHA exists.
+#
+# STATUS-CHECK CONTEXT: the job is named `Build & Test`; a reusable-workflow
+# check renders as `<caller-job-id> / <job-name>`, so callers SHOULD use the
+# caller job id `build-test`, giving `build-test / Build & Test`. The estate's
+# required check is the consumer's local `go/no-go` aggregator (SK-424), so this
+# context is not ruleset-pinned — but keep the id/name stable for legibility.
+#
+# Consume from another repo (SHA-pinned + Dependabot — see README):
+#
+#   jobs:
+#     build-test:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-build-test.yml@<sha>
+
+on:
+  workflow_call:
+    inputs:
+      node-version-file:
+        description: File to read the Node version from (passed to setup-project).
+        type: string
+        required: false
+        default: .nvmrc
+      build:
+        description: Run the build (verification) check.
+        type: boolean
+        required: false
+        default: true
+      build-script:
+        description: pnpm script that builds the package.
+        type: string
+        required: false
+        default: build
+      typecheck:
+        description: Run the TypeScript typecheck (`tsc --noEmit`) check.
+        type: boolean
+        required: false
+        default: true
+      tsconfig:
+        description: >-
+          Path to a tsconfig to type-check (passed as `-p`). Empty uses the
+          default tsconfig.json resolution.
+        type: string
+        required: false
+        default: ""
+      test:
+        description: Run the unit test (Vitest) check.
+        type: boolean
+        required: false
+        default: true
+      test-args:
+        description: Extra arguments passed to `vitest run`.
+        type: string
+        required: false
+        default: ""
+      coverage:
+        description: Collect coverage when running Vitest (`--coverage`).
+        type: boolean
+        required: false
+        default: false
+      shellcheck:
+        description: Run the ShellCheck check over the repo's shell scripts.
+        type: boolean
+        required: false
+        default: true
+      shellcheck-paths:
+        description: >-
+          Space-separated paths/globs to ShellCheck. Empty (default) discovers
+          tracked `*.sh`/`*.bash` files via `git ls-files`.
+        type: string
+        required: false
+        default: ""
+      shellcheck-severity:
+        description: Minimum ShellCheck severity (`error` | `warning` | `info` | `style`).
+        type: string
+        required: false
+        default: style
+      bats:
+        description: >-
+          Run the infrastructure test suite with bats. Off by default — bats is
+          repo-specific and errors when the tool/dir is absent; enable per repo.
+        type: boolean
+        required: false
+        default: false
+      bats-paths:
+        description: Path(s) containing the .bats test files.
+        type: string
+        required: false
+        default: infrastructure/tests
+      bats-recursive:
+        description: Recurse into subdirectories when running bats (`--recursive`).
+        type: boolean
+        required: false
+        default: true
+
+# Deny all token scopes at the workflow root; the job below grants only the
+# contents:read that checkout needs (least privilege; zizmor-clean).
+permissions: {}
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    # setup-project's `pnpm install` would otherwise run the consumer's
+    # `prepare`/husky hook in CI (mirrors ci.yml's markdown job).
+    env:
+      HUSKY: 0
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: 🧰 Set up project
+        # Every lane except shellcheck (preinstalled binary) runs via pnpm, so
+        # skip install only on a shellcheck-only run.
+        if: ${{ inputs.build || inputs.typecheck || inputs.test || inputs.bats }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+
+      - name: 🏗️ Build check
+        if: ${{ inputs.build }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          script: ${{ inputs.build-script }}
+
+      - name: 🔎 Typecheck
+        if: ${{ inputs.typecheck }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/typecheck@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          tsconfig: ${{ inputs.tsconfig }}
+
+      - name: 🧪 Test (Vitest)
+        if: ${{ inputs.test }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-vitest@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          args: ${{ inputs.test-args }}
+          coverage: ${{ inputs.coverage }}
+
+      - name: 🐚 ShellCheck
+        if: ${{ inputs.shellcheck }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/shellcheck@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          paths: ${{ inputs.shellcheck-paths }}
+          severity: ${{ inputs.shellcheck-severity }}
+
+      - name: 🦇 Test (bats)
+        if: ${{ inputs.bats }}
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-bats@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        with:
+          paths: ${{ inputs.bats-paths }}
+          recursive: ${{ inputs.bats-recursive }}

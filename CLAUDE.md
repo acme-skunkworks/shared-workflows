@@ -33,7 +33,7 @@ messages, PR titles/bodies, and any user-facing strings.
 ├── actions/                             # PRODUCT: Layer-1 composite actions (pick-and-mix)
 │   ├── setup-project/                   #   pnpm + Node-from-.nvmrc + store cache
 │   ├── eslint/ lint-markdown/ lint-yaml/    #   lint mix-ins
-│   ├── typecheck/ test-vitest/ test-bats/   #   build/test mix-ins
+│   ├── build/ typecheck/ test-vitest/ test-bats/  #   build/test mix-ins
 │   ├── shellcheck/ changelog-validate/  #   infra/changelog mix-ins
 │   └── README.md                        #   the action catalogue + rationale
 ├── workflows/
@@ -41,6 +41,7 @@ messages, PR titles/bodies, and any user-facing strings.
 │   ├── reusable-claude-code-review.yml  # PRODUCT: PR review
 │   ├── reusable-validate-pr-title.yml   # PRODUCT: conventional PR title
 │   ├── reusable-lint.yml                # PRODUCT: coarse lint bundle (Layer 2)
+│   ├── reusable-build-test.yml          # PRODUCT: coarse build/test bundle (Layer 2)
 │   ├── claude.yml                       # self-host: inline @claude on THIS repo
 │   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
 │   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
