@@ -146,39 +146,39 @@ jobs:
         # Every lane except shellcheck (preinstalled binary) runs via pnpm, so
         # skip install only on a shellcheck-only run.
         if: ${{ inputs.build || inputs.typecheck || inputs.test || inputs.bats }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
       - name: 🏗️ Build check
         if: ${{ inputs.build }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/build@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           script: ${{ inputs.build-script }}
 
       - name: 🔎 Typecheck
         if: ${{ inputs.typecheck }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/typecheck@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/typecheck@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           tsconfig: ${{ inputs.tsconfig }}
 
       - name: 🧪 Test (Vitest)
         if: ${{ inputs.test }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/test-vitest@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-vitest@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           args: ${{ inputs.test-args }}
           coverage: ${{ inputs.coverage }}
 
       - name: 🐚 ShellCheck
         if: ${{ inputs.shellcheck }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/shellcheck@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/shellcheck@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           paths: ${{ inputs.shellcheck-paths }}
           severity: ${{ inputs.shellcheck-severity }}
 
       - name: 🦇 Test (bats)
         if: ${{ inputs.bats }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/test-bats@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-bats@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           paths: ${{ inputs.bats-paths }}
           recursive: ${{ inputs.bats-recursive }}
