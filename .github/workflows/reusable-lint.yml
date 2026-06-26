@@ -98,7 +98,10 @@ on:
         required: false
         default: 1.7.12
       changelog:
-        description: Run the dated-changelog validation check.
+        description: >-
+          Run the dated-changelog validation check. A repo without a dated
+          changelog should set this to false, else `pnpm changelog:validate`
+          fails on first adoption.
         type: boolean
         required: false
         default: true
