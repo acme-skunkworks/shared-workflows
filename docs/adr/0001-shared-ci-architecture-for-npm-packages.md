@@ -6,10 +6,10 @@
   per-repo `go/no-go` aggregator**. See §5–§6.
 - **Date:** 2026-06-25
 - **Deciders:** Rob Easthope
-- **Related:** SK-411 (stand up shared-workflows), SK-412 (`go/no-go` release gate) and its children
-  SK-415/416/417/418/419/420/421/425, SK-403/405 (PR-title gate, estate lockstep), SK-422 (pre-GA
-  SHA-pin + security review), SK-428 (shared Claude pair callers); release-orchestrator ADR 0001
-  (event-driven triggering); SK-384 (drifting per-repo `infrastructure/` copies).
+- **Related:** A-411 (stand up shared-workflows), A-412 (`go/no-go` release gate) and its children
+  A-415/416/417/418/419/420/421/425, A-403/405 (PR-title gate, estate lockstep), A-422 (pre-GA
+  SHA-pin + security review), A-428 (shared Claude pair callers); release-orchestrator ADR 0001
+  (event-driven triggering); A-384 (drifting per-repo `infrastructure/` copies).
 - **Scope:** The CI/release workflows of the estate's **published npm packages** —
   `eslint-config`, `markdownlint-config`, `npm-package-template`, `agent-skills`. The private
   turbo/changesets monorepos (`hecate`, `waterleaf`, `protomolecule`) and the standalone app
@@ -23,7 +23,7 @@
 
 The estate is consolidating per-repo, copy-pasted CI onto a single authoritative home —
 `acme-skunkworks/shared-workflows` — with consumer repos keeping thin, SHA-pinned caller stubs
-(SK-384, SK-411). At the same time the `release-orchestrator` has gone live: it opens release-please
+(A-384, A-411). At the same time the `release-orchestrator` has gone live: it opens release-please
 PRs on each target's behalf and **merges them only when a named check-run goes green**. The CI we
 build must therefore satisfy two masters at once — be **fast and low-maintenance** for small
 single-package libraries, and **expose exactly the pass/fail signal the orchestrator polls for**.
@@ -77,27 +77,27 @@ posture in §5.5.
 `orchestrate-releases.yml` decides "go" by polling the **GitHub Checks API** on the release PR's
 head SHA for a check-run **whose `.name` matches a literal string**, taking the most recent run by
 monotonic `id`, every 30 s for ~12 min, and merging only on `conclusion == success`
-(`--match-head-commit` TOCTOU guard, SK-334). Today that literal is `🔬 Build & Lint`. The estate is
-mid-migration to a single, purpose-built gate named **`go/no-go`** (SK-412): an `if: always()`
+(`--match-head-commit` TOCTOU guard, A-334). Today that literal is `🔬 Build & Lint`. The estate is
+mid-migration to a single, purpose-built gate named **`go/no-go`** (A-412): an `if: always()`
 aggregator job that `needs:` every real CI job, whose **intrinsic check-run is the gate**. Because a
 check-run can only be minted by a GitHub App (the repo's own Actions), it **cannot be forged** by a
 push-scoped token or a fork — and a ruleset pins the required reporting integration to GitHub Actions
-(SK-418/SK-425). This is the signal our shared workflows must make it trivial — and unforgeable — for
+(A-418/A-425). This is the signal our shared workflows must make it trivial — and unforgeable — for
 a consumer to emit.
 
 ---
 
 ## 2. Decision drivers
 
-| #   | Driver                              | Why it matters                                                                                                                                                                                                                    |
-| --- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | **Single source of truth**          | Kill the drift across copy-pasted `ci.yml`/`infrastructure/` (SK-384). One place to bump a SHA or a rule.                                                                                                                         |
-| D2  | **Orchestrator-compatibility**      | CI must emit the exact gate check-run the orchestrator polls (`go/no-go`, migrating from `🔬 Build & Lint`), on `release-please--*` PRs, as a required check.                                                                     |
-| D3  | **Performance for small repos**     | Optimise the actual bottleneck (spin-up, install, tool fetch), not imaginary compute. Don't import monorepo machinery a single package can't amortise.                                                                            |
-| D4  | **Flexibility without forking**     | Repos share 90% but each keeps a legitimate 10% (no-build config package, skills metadata gate, Octavo's CircleCI input). The design must absorb that without per-repo copies of the shared logic.                                |
-| D5  | **Security / supply-chain**         | Public repos, assumed-exfiltratable CI. PR-triggered workflows take **no secrets** and never use `pull_request_target`; anything privileged is push-to-`main` only; all cross-repo `uses:` are SHA-pinned (SK-411 scope, SK-422). |
-| D6  | **`sha_pinning_required` org rule** | Local `uses: ./.github/workflows/…` reusable refs are rejected at startup; only cross-repo `@<sha>` is compliant. This shapes _how_ repos consume the shared workflows and why this repo dogfoods inline.                         |
-| D7  | **Low maintenance ceiling**         | Solo-maintainer estate (0 required approvals, no CODEOWNERS). The architecture must be boring to keep green.                                                                                                                      |
+| #   | Driver                              | Why it matters                                                                                                                                                                                                                  |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Single source of truth**          | Kill the drift across copy-pasted `ci.yml`/`infrastructure/` (A-384). One place to bump a SHA or a rule.                                                                                                                        |
+| D2  | **Orchestrator-compatibility**      | CI must emit the exact gate check-run the orchestrator polls (`go/no-go`, migrating from `🔬 Build & Lint`), on `release-please--*` PRs, as a required check.                                                                   |
+| D3  | **Performance for small repos**     | Optimise the actual bottleneck (spin-up, install, tool fetch), not imaginary compute. Don't import monorepo machinery a single package can't amortise.                                                                          |
+| D4  | **Flexibility without forking**     | Repos share 90% but each keeps a legitimate 10% (no-build config package, skills metadata gate, Octavo's CircleCI input). The design must absorb that without per-repo copies of the shared logic.                              |
+| D5  | **Security / supply-chain**         | Public repos, assumed-exfiltratable CI. PR-triggered workflows take **no secrets** and never use `pull_request_target`; anything privileged is push-to-`main` only; all cross-repo `uses:` are SHA-pinned (A-411 scope, A-422). |
+| D6  | **`sha_pinning_required` org rule** | Local `uses: ./.github/workflows/…` reusable refs are rejected at startup; only cross-repo `@<sha>` is compliant. This shapes _how_ repos consume the shared workflows and why this repo dogfoods inline.                       |
+| D7  | **Low maintenance ceiling**         | Solo-maintainer estate (0 required approvals, no CODEOWNERS). The architecture must be boring to keep green.                                                                                                                    |
 
 ---
 
@@ -135,7 +135,7 @@ monorepo-scale half on the shelf until a monorepo actually consumes them.
 - **C — Layered: composite actions _and_ thin reusable workflows (chosen).** Low-level actions
   (setup/cache) are the reusable atoms; reusable workflows compose them into standard jobs; repos
   with standard needs call the workflow, repos that must customise drop to the actions. Matches the
-  existing `reusable-*` direction and SK-411's "commodity logic shared, `go/no-go` stays per-repo".
+  existing `reusable-*` direction and A-411's "commodity logic shared, `go/no-go` stays per-repo".
 
 **Chosen: C.** It is the only option that delivers D1 _and_ D4 simultaneously.
 
@@ -147,8 +147,8 @@ monorepo-scale half on the shelf until a monorepo actually consumes them.
 - **B — A per-repo `go/no-go` aggregator that `needs:` the shared jobs (chosen).** Each repo keeps a
   ~10-line `if: always()` aggregator that depends on its real jobs (shared callers _and_ any local
   extras) and emits the intrinsic `go/no-go` check-run. The shared workflows stay gate-agnostic
-  (SK-416 explicitly: build-test is "`🔬 Build & Lint`-equivalent, **minus the gate naming**"). This
-  is already the shipped reference in `npm-package-template` (SK-424, Done).
+  (A-416 explicitly: build-test is "`🔬 Build & Lint`-equivalent, **minus the gate naming**"). This
+  is already the shipped reference in `npm-package-template` (A-424, Done).
 
 **Chosen: B.** The gate must be able to see _all_ of a repo's jobs, including local ones; only the
 repo itself can express that `needs:` list. This also keeps the unforgeability property local to the
@@ -184,12 +184,12 @@ repo's own Actions (D5).
         ▼
 ┌─ acme-skunkworks/shared-workflows ─────────────────────────────────┐
 │  Layer 2 — reusable workflows (on: workflow_call)                   │
-│    reusable-lint.yml (SK-415) · reusable-build-test.yml (SK-416)    │
-│    reusable-validate-pr-title.yml (SK-403, shipped)                 │
-│    reusable-release.yml (SK-417) · reusable-claude*.yml (shipped)   │
+│    reusable-lint.yml (A-415) · reusable-build-test.yml (A-416)    │
+│    reusable-validate-pr-title.yml (A-403, shipped)                 │
+│    reusable-release.yml (A-417) · reusable-claude*.yml (shipped)   │
 │  Layer 1 — composite actions (action.yml)                          │
 │    setup-project (pnpm + Node-from-.nvmrc + caches)                │
-│  Governance — versioned estate rulesets JSON (SK-425)              │
+│  Governance — versioned estate rulesets JSON (A-425)              │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -212,7 +212,7 @@ job name compose the check context, and the gate name is applied by the aggregat
 
 The PR-title workflow keeps its load-bearing name: the caller job id must be `pr-title` and the job
 name `Validate PR title is a Conventional Commit`, giving the estate-pinned context
-`pr-title / Validate PR title is a Conventional Commit` (SK-403/405). **Do not rename either half.**
+`pr-title / Validate PR title is a Conventional Commit` (A-403/405). **Do not rename either half.**
 
 ### 5.4 The gate — per-repo `go/no-go` aggregator
 
@@ -232,9 +232,9 @@ go-no-go:
 ```
 
 Its **intrinsic check-run** `go/no-go` is what the orchestrator polls and what the ruleset requires
-(pinned to the GitHub Actions integration, so it is unforgeable — SK-418/425). For **Octavo-class
+(pinned to the GitHub Actions integration, so it is unforgeable — A-418/425). For **Octavo-class
 deploy targets** (future, §8) the same aggregator gains a bounded-poll step that reads CircleCI's
-typegen status as an **input** (SK-421) — CircleCI is never the authority and the orchestrator never
+typegen status as an **input** (A-421) — CircleCI is never the authority and the orchestrator never
 talks to it; the gate still runs on GitHub Actions.
 
 ### 5.5 Performance posture (lean now, measured later)
@@ -278,8 +278,8 @@ the expensive axis and splitting at the _action_ layer is the cheap one. Therefo
   `test-bats`, `shellcheck`, `changelog-validate`. A repo composes exactly the ones it needs inside
   one job — one setup, N checks.
 - **Coarse reusable workflows (the convenience bundles, kept few):** `reusable-lint.yml`
-  (SK-415 — setup + eslint + markdown + yaml + changelog) and `reusable-build-test.yml`
-  (SK-416 — setup + build + typecheck + test + infra) each pay setup **once** and run several
+  (A-415 — setup + eslint + markdown + yaml + changelog) and `reusable-build-test.yml`
+  (A-416 — setup + build + typecheck + test + infra) each pay setup **once** and run several
   checks; plus the standalone-by-nature `reusable-validate-pr-title.yml` (no setup),
   `reusable-release.yml` (different trigger + secrets), and the Claude pair. **Deliberately not**
   one reusable workflow per linter — that multiplies setup for no benefit a step boundary doesn't
@@ -287,7 +287,7 @@ the expensive axis and splitting at the _action_ layer is the cheap one. Therefo
 - **Two escape hatches for partial opt-out**, in increasing order of cost:
   1. **Boolean `with:` inputs** on the coarse workflows (`markdown: false`, `eslint: false`) — drop a
      sub-check without leaving the bundle. (This is how `markdownlint-config` sets `build: false` and
-     how `agent-skills` ran `eslint: false` pre-SK-394.)
+     how `agent-skills` ran `eslint: false` pre-A-394.)
   2. **Drop to the action layer** — assemble a bespoke job from the composite actions when the
      standard bundle doesn't fit.
   3. **Promote a check to its own job/workflow** only when a repo genuinely wants it as a _separate
@@ -317,7 +317,7 @@ actions" → "promote to its own check".
 ### Bad / costs
 
 - **The transitional double-name window.** During rollout the orchestrator dual-accepts
-  `🔬 Build & Lint` _and_ `go/no-go` (SK-419); until every served repo emits `go/no-go` and the
+  `🔬 Build & Lint` _and_ `go/no-go` (A-419); until every served repo emits `go/no-go` and the
   orchestrator goes single-name, both must be kept working. This is real coordination cost (§7).
 - **Inline dogfooding drift risk** in this repo (the `reusable-*` ↔ inline copies must be kept in
   sync — an existing, accepted CLAUDE.md hazard).
@@ -326,7 +326,7 @@ actions" → "promote to its own check".
 
 ### Neutral
 
-- Per-repo `repo-config.yaml` + `load-repo-config` **stay local** (SK-411) — values reach the shared
+- Per-repo `repo-config.yaml` + `load-repo-config` **stay local** (A-411) — values reach the shared
   workflows via `with:` inputs, not by centralising the config.
 - Monorepos and the app keep their bespoke CI until a monorepo tier is actually built (§8).
 
@@ -334,35 +334,35 @@ actions" → "promote to its own check".
 
 ## 7. Migration & rollout (maps to existing Linear)
 
-The forward path is already ticketed under **SK-412**; this ADR ratifies it rather than inventing it:
+The forward path is already ticketed under **A-412**; this ADR ratifies it rather than inventing it:
 
-1. **Author the building blocks** — SK-415 (`lint`), SK-416 (`build-test`), SK-417 (`release`),
-   PR-title shipped (SK-403); `setup-project` composite. (SK-411 umbrella, In Progress.)
-2. **Define the gate pattern + ruleset** — SK-418; version the rulesets in this repo — SK-425.
+1. **Author the building blocks** — A-415 (`lint`), A-416 (`build-test`), A-417 (`release`),
+   PR-title shipped (A-403); `setup-project` composite. (A-411 umbrella, In Progress.)
+2. **Define the gate pattern + ruleset** — A-418; version the rulesets in this repo — A-425.
 3. **Reference consumer** — `npm-package-template` already adopts shared callers + local `go/no-go`
-   (SK-424/413, **Done**) and is the canonical `go/no-go` emitter.
-4. **Roll out across the fleet** — SK-420: add callers + local aggregator + required-`go/no-go`
-   ruleset to `eslint-config`, `agent-skills`, `markdownlint-config` (and Octavo, via SK-421),
+   (A-424/413, **Done**) and is the canonical `go/no-go` emitter.
+4. **Roll out across the fleet** — A-420: add callers + local aggregator + required-`go/no-go`
+   ruleset to `eslint-config`, `agent-skills`, `markdownlint-config` (and Octavo, via A-421),
    **dual-running** alongside `🔬 Build & Lint`.
-5. **Flip the orchestrator** — SK-419: `CHECK_NAME` dual-accept → `go/no-go`-only once every served
-   repo emits it (keep the SK-334 TOCTOU guard).
-6. **Shared Claude pair callers** — SK-428 (and per-repo, e.g. SK-433 Octavo).
-7. **Pre-GA gate** — SK-422: SHA-pin policy enforcement + security review of the shared workflows.
+5. **Flip the orchestrator** — A-419: `CHECK_NAME` dual-accept → `go/no-go`-only once every served
+   repo emits it (keep the A-334 TOCTOU guard).
+6. **Shared Claude pair callers** — A-428 (and per-repo, e.g. A-433 Octavo).
+7. **Pre-GA gate** — A-422: SHA-pin policy enforcement + security review of the shared workflows.
 
-### 7.1 Decommission the old gate immediately — SK-437
+### 7.1 Decommission the old gate immediately — A-437
 
 The _forward_ migration is well covered, but the **decommission of `🔬 Build & Lint` as the gate** was
-only **implicit** in SK-419's "then `go/no-go`-only" clause — not its own tracked step, so it risked
-being "finished" while stale scaffolding lingered. That gap is now closed by **SK-437** (child of
-SK-412, raised alongside this ADR).
+only **implicit** in A-419's "then `go/no-go`-only" clause — not its own tracked step, so it risked
+being "finished" while stale scaffolding lingered. That gap is now closed by **A-437** (child of
+A-412, raised alongside this ADR).
 
 The policy decision is to **collapse the double-name window as soon as `go/no-go` is in place and
 verified** across every served repo — not to leave `🔬 Build & Lint` dual-accepted indefinitely.
-SK-437 fires immediately after SK-420 (fleet emits a required `go/no-go`) + SK-419 (orchestrator
+A-437 fires immediately after A-420 (fleet emits a required `go/no-go`) + A-419 (orchestrator
 dual-accepting), and deletes:
 
 - the orchestrator's dual-accept of `🔬 Build & Lint`, leaving it polling `go/no-go` **only** (keep
-  the SK-334 TOCTOU guard);
+  the A-334 TOCTOU guard);
 - the `🔬 Build & Lint` required-check in each repo's ruleset, swapped for `go/no-go` pinned to the
   GitHub Actions integration;
 - the transitional _"do NOT rename… dual-accept"_ comments in `npm-package-template`'s `ci.yml` and
@@ -383,13 +383,13 @@ files against the projects that already exist, and create projects for the gaps.
 
 ### 8.1 Config projects that already exist (Open source initiative)
 
-| Config       | Package                                | Linear project      | State                               |
-| ------------ | -------------------------------------- | ------------------- | ----------------------------------- |
-| ESLint       | `@acme-skunkworks/eslint-config`       | eslint-config       | In Progress (published)             |
-| markdownlint | `@acme-skunkworks/markdownlint-config` | markdownlint-config | In Progress (published)             |
-| TypeScript   | `@acme-skunkworks/tsconfig`            | tsconfig            | Idea (baseline from Tempest; SK-96) |
-| Vitest       | `@acme-skunkworks/vitest-config`       | vitest-config       | Idea (baseline from Tempest)        |
-| Stylelint    | `@acme-skunkworks/stylelint-config`    | style-lint          | Idea (Tailwind + standard)          |
+| Config       | Package                                | Linear project      | State                              |
+| ------------ | -------------------------------------- | ------------------- | ---------------------------------- |
+| ESLint       | `@acme-skunkworks/eslint-config`       | eslint-config       | In Progress (published)            |
+| markdownlint | `@acme-skunkworks/markdownlint-config` | markdownlint-config | In Progress (published)            |
+| TypeScript   | `@acme-skunkworks/tsconfig`            | tsconfig            | Idea (baseline from Tempest; A-96) |
+| Vitest       | `@acme-skunkworks/vitest-config`       | vitest-config       | Idea (baseline from Tempest)       |
+| Stylelint    | `@acme-skunkworks/stylelint-config`    | style-lint          | Idea (Tailwind + standard)         |
 
 ### 8.2 Gaps found — and how they were resolved
 
@@ -399,14 +399,14 @@ Diffing Tempest's config files against the table above left two genuine gaps. Bo
   overrides, plus the `prettier-plugin-astro` / `prettier-plugin-tailwindcss` plugins); all four npm
   packages carry Prettier + a local `.prettierignore` with no shared preset. Stood up as the
   **prettier-config** project under Open source (Idea), scaffolded from `npm-package-template`,
-  baseline from Tempest — the natural home to encode the recurring SK-378 / GH-848 formatter
+  baseline from Tempest — the natural home to encode the recurring A-378 / GH-848 formatter
   friction once.
 - **yamllint → centralised in `shared-workflows`, not a package.** `.yamllint.yml` is **copy-pasted
-  verbatim into all four npm repos** (and Tempest) — the per-repo drift SK-384 exists to kill. The
+  verbatim into all four npm repos** (and Tempest) — the per-repo drift A-384 exists to kill. The
   decision is **own-it-in-the-workflow** rather than publish-as-package: yamllint is CI-coupled and
   its `extends` support is weaker than ESLint's, so the canonical config lives in `shared-workflows`
-  and is injected by `reusable-lint.yml`, leaving consumers with no local copy. Tracked as **SK-438**
-  (Shared Workflows project, related to SK-415/384). This sets the estate convention: **editor-time
+  and is injected by `reusable-lint.yml`, leaving consumers with no local copy. Tracked as **A-438**
+  (Shared Workflows project, related to A-415/384). This sets the estate convention: **editor-time
   configs are published packages (eslint/markdown/prettier/tsconfig/vitest); CI-time configs are
   centralised in the workflow (yamllint).**
 
@@ -422,7 +422,7 @@ configs. Standing up the new **prettier-config** package now, alongside the alre
 tsconfig/vitest/stylelint projects, means Octavo consumes ready-made `@acme-skunkworks/*` presets
 rather than re-deriving them from Tempest; its **yamllint** comes for free from the shared
 `reusable-lint.yml` (§8.2), not a package. (Note the standing caveat that Octavo's CI itself is
-moving to CircleCI for IPv6/Supabase typegen — SK-421 — but its config _packages_ are runner-agnostic
+moving to CircleCI for IPv6/Supabase typegen — A-421 — but its config _packages_ are runner-agnostic
 and unaffected.)
 
 ## 9. Readiness audit — what to get in sooner rather than later
@@ -438,20 +438,20 @@ A quick health-check of the four in-scope npm packages and the configs feeding t
   ESLint and no `tsc`** despite shipping a `tsconfig.json` (type-check-only, `noEmit`, covering its
   7 `infrastructure/scripts/**/*.ts`) — the config exists but no `tsc` script ever runs it (its
   `include` also carries a stale, empty `infrastructure/send-it/**/*.ts`). Decision taken to bring it
-  to parity: **SK-394** (revived) wires up `tsc` + adopts `@acme-skunkworks/eslint-config` for the
+  to parity: **A-394** (revived) wires up `tsc` + adopts `@acme-skunkworks/eslint-config` for the
   infra `.ts` scripts. The shareable skill code is `.mjs` (zero-dep ESM, not in any tsconfig), which
-  the TS-oriented preset doesn't yet cleanly lint standalone — **SK-439** (eslint-config) validates/
+  the TS-oriented preset doesn't yet cleanly lint standalone — **A-439** (eslint-config) validates/
   extends `.mjs` coverage and unblocks the `.mjs` half. Sequencing matters: the shared `build-test`
-  caller (SK-416) should not assume an ESLint/`tsc` lane in every repo until SK-394 lands.
+  caller (A-416) should not assume an ESLint/`tsc` lane in every repo until A-394 lands.
 - **Config drift to retire (feeds §8.2).** `.yamllint.yml` and the `.markdownlint-cli2.jsonc` wrapper
   are duplicated across the four repos. markdownlint already extends the shared package; **yamllint
-  does not** — close that by centralising it in `shared-workflows`/`reusable-lint.yml` (SK-438), so
-  consumers carry no local copy, landing the SK-384 win.
-- **Known formatter friction.** SK-378 (eslint ↔ Prettier `jsonc` array conflict) and GH-848
+  does not** — close that by centralising it in `shared-workflows`/`reusable-lint.yml` (A-438), so
+  consumers carry no local copy, landing the A-384 win.
+- **Known formatter friction.** A-378 (eslint ↔ Prettier `jsonc` array conflict) and GH-848
   (`turbo.json` lint-staged loop) are recurring; a shared `prettier-config` is the natural place to
   encode the resolution once rather than per-repo `.prettierignore` patches.
 
-None of these block the workflow rollout, but centralising yamllint (SK-438) and the new
+None of these block the workflow rollout, but centralising yamllint (A-438) and the new
 `prettier-config` package are the highest-leverage "do it while we're in here" items.
 
 ## 10. Open questions & future work
@@ -459,11 +459,11 @@ None of these block the workflow rollout, but centralising yamllint (SK-438) and
 - **Monorepo tier.** When `hecate`/`waterleaf`/`protomolecule` adopt shared CI, the deferred Tempest
   machinery (change-detection, turbo filtering, dual-layer cache) becomes relevant. That is a
   separate ADR; this one deliberately does not design it, but §3's catalogue is the starting point.
-- **Octavo / deploy targets.** In scope only as a documented seam (§5.4 + SK-421). Note the
+- **Octavo / deploy targets.** In scope only as a documented seam (§5.4 + A-421). Note the
   standing tension: Octavo is moving its IPv6/Supabase typegen to **CircleCI**, yet its **gate stays
   on GitHub Actions** with CircleCI as a bounded-poll input. The orchestrator never depends on
   CircleCI.
-- **`load-repo-config` home.** Stays local per SK-411; revisit only if a security-review (SK-422)
+- **`load-repo-config` home.** Stays local per A-411; revisit only if a security-review (A-422)
   argues for centralising the registry-URL validation.
 - **Orchestrator latency.** Independent of this ADR but adjacent: release-orchestrator ADR 0001
   proposes replacing the 15-min cron poll with an external Cloudflare trigger + App webhook. If

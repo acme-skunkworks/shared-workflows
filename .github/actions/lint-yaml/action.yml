@@ -1,7 +1,7 @@
 name: Lint YAML
 description: >-
   Run yamllint (using shared-workflows' centralised config) and, optionally,
-  actionlint over the consumer's tree. Implements the SK-438 config injection so
+  actionlint over the consumer's tree. Implements the A-438 config injection so
   consumers carry no local `.yamllint.yml` (ADR 0001 §5.7, §8.2/§9).
 
 # Layer-1 mix-in. yamllint and actionlint are NOT Node tools, so they are
@@ -11,12 +11,12 @@ description: >-
 #     (the script verifies the downloaded binary's checksum).
 # Versions/pins mirror this repo's own ci.yml so the two never drift.
 #
-# Config injection (SK-438): yamllint runs with `-c` pointed at shared-workflows'
+# Config injection (A-438): yamllint runs with `-c` pointed at shared-workflows'
 # OWN `.yamllint.yml`, resolved relative to ${{ github.action_path }} (this repo
 # is checked out alongside the action when a consumer references it cross-repo).
 # That root file stays the single source of truth — not duplicated into here.
 #
-# Trust boundary (SK-422): pinned installer SHA + checksum-verified binary.
+# Trust boundary (A-422): pinned installer SHA + checksum-verified binary.
 
 inputs:
   paths:
@@ -30,13 +30,13 @@ inputs:
   yamllint-version:
     description: >-
       yamllint version to install via pip. Pinned to match this repo's ci.yml —
-      bump deliberately in lockstep, not ad-hoc per consumer (SK-422).
+      bump deliberately in lockstep, not ad-hoc per consumer (A-422).
     required: false
     default: 1.37.1
   actionlint-version:
     description: >-
       actionlint version to install via the pinned installer. Pinned to match
-      ci.yml — bump deliberately in lockstep, not ad-hoc per consumer (SK-422).
+      ci.yml — bump deliberately in lockstep, not ad-hoc per consumer (A-422).
     required: false
     default: 1.7.12
 

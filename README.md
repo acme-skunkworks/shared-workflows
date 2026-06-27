@@ -96,7 +96,7 @@ jobs:
     uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@<sha> # v0.1.0
 ```
 
-**Required-check context (SK-400 / SK-405).** The reusable job is named
+**Required-check context (A-400 / A-405).** The reusable job is named
 `Validate PR title is a Conventional Commit`, and a reusable-workflow check
 renders as `<caller-job-id> / <job-name>`. Use the caller job id **`pr-title`**
 so every repo reports the same context —

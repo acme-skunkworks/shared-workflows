@@ -2,13 +2,13 @@ name: Reusable / Validate PR title
 
 # Reusable (workflow_call) version of the estate's conventional-PR-title check.
 # The repos squash-merge, so the PR title IS the squash subject release-please
-# parses to decide the semver bump (SK-371) — a mistyped prefix silently ships
+# parses to decide the semver bump (A-371) — a mistyped prefix silently ships
 # the wrong version. This guards the format.
 #
 # The `pull_request` trigger stays in the CALLER stub; include `edited` so the
 # check re-runs when a title is corrected (the default set omits it).
 #
-# STATUS-CHECK CONTEXT (SK-400 / SK-405): the job below is named
+# STATUS-CHECK CONTEXT (A-400 / A-405): the job below is named
 # `Validate PR title is a Conventional Commit` — the estate-canonical string a
 # single required-check rule can pin across every repo. A reusable-workflow
 # check renders as `<caller-job-id> / <job-name>`, so callers MUST use a

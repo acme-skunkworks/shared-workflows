@@ -6,7 +6,7 @@ description: >-
 
 # Layer-1 mix-in: a single step. The estate's dated-changelog validator ships
 # with each repo as a package script, so this action runs that script via the
-# consumer's toolchain — no third-party `uses:` to pin. Trust boundary: SK-422.
+# consumer's toolchain — no third-party `uses:` to pin. Trust boundary: A-422.
 #
 # The validator is named by a `script` input (a pnpm script name), NOT a free
 # shell command: `pnpm run "$script"` passes it as a single argument, so the

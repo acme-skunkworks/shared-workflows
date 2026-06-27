@@ -30,7 +30,7 @@ needs.
 | `setup-project`      | pnpm + Node (from `.nvmrc`) + lockfile-keyed pnpm store cache, then install      |
 | `eslint`             | ESLint over the repo (consumer's flat config + `@acme-skunkworks/eslint-config`) |
 | `lint-markdown`      | markdownlint-cli2                                                                |
-| `lint-yaml`          | yamllint (config injected from this repo, SK-438) + actionlint                   |
+| `lint-yaml`          | yamllint (config injected from this repo, A-438) + actionlint                    |
 | `build`              | `pnpm run build` (verification build; published artefact rebuilt in release)     |
 | `typecheck`          | `tsc --noEmit`                                                                   |
 | `test-vitest`        | `vitest run` (unit tests)                                                        |
@@ -53,7 +53,7 @@ installer), and the runner's preinstalled ShellCheck.
   `# vX.Y.Z` comment and bumped weekly by Dependabot. Tool versions (yamllint,
   actionlint, pnpm, Node) mirror this repo's own `ci.yml` so they never drift.
 - **Permissions** — composite actions inherit the calling job's token scopes;
-  they declare none. These actions sit inside the publish trust boundary (SK-422).
+  they declare none. These actions sit inside the publish trust boundary (A-422).
 
 ## Why this repo does not dogfood them via `uses:`
 
@@ -62,5 +62,5 @@ root `CLAUDE.md`), a local `uses: ./…` self-reference is not SHA-pinnable and 
 cross-repo self-reference is circular before the first tagged SHA exists. So
 `shared-workflows` authors these actions but does **not** consume them in its own
 `ci.yml`; consumers reference them cross-repo by `@<sha>`, which is compliant.
-Layer 2's `reusable-lint.yml` (SK-415) and `reusable-build-test.yml` (SK-416)
+Layer 2's `reusable-lint.yml` (A-415) and `reusable-build-test.yml` (A-416)
 compose them.

@@ -28,7 +28,7 @@ jobs:
   pr-title:
     # Mirrors reusable-validate-pr-title.yml so this repo gates its own PRs the
     # same way consumers will. The job name is the estate-canonical status-check
-    # string (SK-400/405) — keep it stable.
+    # string (A-400/405) — keep it stable.
     name: Validate PR title is a Conventional Commit
     runs-on: ubuntu-latest
     permissions:

@@ -7,7 +7,7 @@ description: >-
 # Layer-1 mix-in: a single step in the calling job. ESLint and its config are
 # the consumer's devDependencies — this action only invokes the locally
 # installed binary via `pnpm exec`, so it pins no third-party `uses:`.
-# Trust boundary: SK-422.
+# Trust boundary: A-422.
 
 inputs:
   args:

@@ -4,7 +4,7 @@ description: >-
   has already installed dependencies (ADR 0001 §5.7).
 
 # Layer-1 mix-in: a single step. Vitest is the consumer's devDependency —
-# invoked via `pnpm exec`, so no third-party `uses:` to pin. Trust boundary: SK-422.
+# invoked via `pnpm exec`, so no third-party `uses:` to pin. Trust boundary: A-422.
 
 inputs:
   args:
