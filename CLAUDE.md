@@ -192,6 +192,28 @@ pnpm format:check    # prettier --check .
 
 Local tooling install (macOS): `brew install yamllint actionlint`.
 
+## Agent skills
+
+This repo adopts the shared `@acme-skunkworks/agent-skills` bundles, installed via
+[skills.sh](https://skills.sh) under `.claude/skills/` (mirrored to `.agents/skills/`
+for Cursor). Each skill reads its own `config.json`, reconciled to this repo's facts by
+the `initialise-skills` skill (base branch, package roots, Linear team / workspace,
+issue keys). The installed skills are:
+
+- **`/send-it`** — bundle uncommitted work into atomic Conventional Commits, run the
+  lint preflight, set a Conventional Commits PR title, push, open or update a draft PR,
+  and move linked Linear issues to **In Review**.
+- **`/preflight`** — change-gated, branch-scoped lint preflight on the current branch.
+- **`/linear-sync`** — transition the Linear issue(s) linked to the current branch.
+- **`/cleanup-repo`** — prune merged branches and worktrees, then filesystem cruft,
+  behind a single confirmation gate (with a `--dry-run` preview).
+- **`/triage-pr`** — drive a draft PR with failing CI to merge-ready: fix in-scope CI
+  failures, then action unresolved AI review feedback.
+
+This repo has **no changelog flow**, so `send-it` skips changelog authoring
+(`changelog: false` in its `config.json`) and the `changelog` skill is intentionally
+**not** installed.
+
 ## Linting and formatting
 
 - **Markdown** — `.markdownlint-cli2.jsonc` extends `@acme-skunkworks/markdownlint-config`.
