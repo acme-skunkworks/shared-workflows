@@ -19,7 +19,7 @@ name: Reusable / Lint
 # (community #18601), and `sha_pinning_required` rejects an unpinned local ref
 # anyway. So each action below is referenced by its full cross-repo path,
 # SHA-pinned. That full-path form is also what populates `github.action_path`
-# so lint-yaml's centralised `.yamllint.yml` injection resolves (SK-438).
+# so lint-yaml's centralised `.yamllint.yml` injection resolves (A-438).
 #
 # This repo does NOT dogfood this workflow (the same circularity that inlines
 # ci.yml/claude.yml); it is exercised by consumers, where the pinned SHA exists.
@@ -27,7 +27,7 @@ name: Reusable / Lint
 # STATUS-CHECK CONTEXT: the job is named `Lint`; a reusable-workflow check
 # renders as `<caller-job-id> / <job-name>`, so callers SHOULD use the caller
 # job id `lint`, giving `lint / Lint`. The estate's required check is the
-# consumer's local `go/no-go` aggregator (SK-424), so this context is not
+# consumer's local `go/no-go` aggregator (A-424), so this context is not
 # ruleset-pinned — but keep the id/name stable for legibility.
 #
 # Consume from another repo (SHA-pinned + Dependabot — see README):
@@ -86,14 +86,14 @@ on:
       yamllint-version:
         description: >-
           yamllint version to install via pip. Mirrors this repo's ci.yml — bump
-          in lockstep, not ad-hoc per consumer (SK-422).
+          in lockstep, not ad-hoc per consumer (A-422).
         type: string
         required: false
         default: 1.37.1
       actionlint-version:
         description: >-
           actionlint version to install via the pinned installer. Mirrors ci.yml
-          — bump in lockstep, not ad-hoc per consumer (SK-422).
+          — bump in lockstep, not ad-hoc per consumer (A-422).
         type: string
         required: false
         default: 1.7.12

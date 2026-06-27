@@ -6,7 +6,7 @@ description: >-
 
 # Layer-1 mix-in: a single step. markdownlint-cli2 is the consumer's
 # devDependency — invoked via `pnpm exec`, so no third-party `uses:` to pin.
-# Trust boundary: SK-422.
+# Trust boundary: A-422.
 
 inputs:
   globs:

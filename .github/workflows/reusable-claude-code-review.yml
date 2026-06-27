@@ -52,7 +52,7 @@ jobs:
       # Required: claude-code-action exchanges an OIDC token for its short-lived
       # GitHub token (getOidcToken → setupGitHubToken). Removing it fails the run
       # with "Could not fetch an OIDC token" — it is NOT just for publishing, so
-      # the ASW-329 least-privilege drop was reverted.
+      # the A-329 least-privilege drop was reverted.
       id-token: write
 
     steps:
@@ -78,7 +78,7 @@ jobs:
           # fails the regex ("Invalid marketplace URL format") and a bare URL
           # always clones the marketplace at default-branch HEAD. So the
           # immutable-tag pin is impossible here and the marketplace necessarily
-          # floats (ASW-343). Accepted risk: the marketplace repo is the same
+          # floats (A-343). Accepted risk: the marketplace repo is the same
           # first-party org (anthropics) as the SHA-pinned action above, and the
           # review is already hardened — WebSearch/WebFetch disallowed, tight
           # --allowedTools, no publish identity. Do NOT re-add a `#tag` suffix:

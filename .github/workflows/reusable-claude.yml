@@ -35,7 +35,7 @@ on:
 
 jobs:
   claude:
-    # Author-association gate (ASW-313): these triggers run in trusted
+    # Author-association gate (A-313): these triggers run in trusted
     # base-repo context with secrets available, so restrict to the
     # maintainer set (OWNER / MEMBER / COLLABORATOR). Without this, any
     # public user could fire a privileged run by commenting "@claude".
@@ -61,7 +61,7 @@ jobs:
       # Required: claude-code-action exchanges an OIDC token for its short-lived
       # GitHub token (getOidcToken → setupGitHubToken). Removing it fails the run
       # with "Could not fetch an OIDC token" — it is NOT just for publishing, so
-      # the ASW-329 least-privilege drop was reverted.
+      # the A-329 least-privilege drop was reverted.
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:

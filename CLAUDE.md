@@ -61,7 +61,7 @@ messages, PR titles/bodies, and any user-facing strings.
 - **Permissions** are declared in the reusable job and are capped by the
   caller/org token settings. `id-token: write` on the Claude workflows is
   **required** for claude-code-action's OIDC token exchange — do not drop it
-  (ASW-329).
+  (A-329).
 - **`paths-ignore`** cannot be set on `workflow_call`, so the Claude review's
   paths-ignore lives in the caller stub.
 - The `reusable-` prefix avoids a filename collision with the same-named caller
@@ -76,11 +76,11 @@ messages, PR titles/bodies, and any user-facing strings.
   resolves. `reusable-lint.yml` pins to the actions' commit (no release tag exists
   yet); the release process maintains it once tags land.
 
-## The release workflow (`reusable-release.yml`, SK-417)
+## The release workflow (`reusable-release.yml`, A-417)
 
 `reusable-release.yml` ports the estate's hardened release flow (build-once →
 npm OIDC Trusted Publishing → GitHub Packages mirror → tag + GitHub release;
-ASW-328/326/323) into a `workflow_call`. Unlike the lint/build-test bundles it
+A-328/326/323) into a `workflow_call`. Unlike the lint/build-test bundles it
 publishes, so it carries some unique rules:
 
 - **No `secrets:` block.** The npm leg authenticates via OIDC Trusted Publishing
@@ -97,17 +97,17 @@ publishes, so it carries some unique rules:
   estate rollout.
 - **Consumer prerequisite — branch-protected `npm-release` environment.** A
   reusable workflow's `environment:` resolves in the **caller** repo; each
-  consumer must define `npm-release` restricted to the release branch (ASW-326).
+  consumer must define `npm-release` restricted to the release branch (A-326).
   If it is absent GitHub silently auto-creates it **unprotected**, losing the ref
   gate — so it is a hard prerequisite, not a default.
 - **Caller owns the trigger; no `workflow_dispatch`.** `workflow_call` cannot own
   `on: push`/`concurrency`; the caller sets push-to-`main` +
   `cancel-in-progress: false` and must **not** add `workflow_dispatch` — a
   dispatched run satisfies the same npm OIDC subject as a legitimate post-merge
-  push and could publish a poisoned tarball with valid provenance (ASW-326).
+  push and could publish a poisoned tarball with valid provenance (A-326).
 - **The two publish scripts are inlined** (not the consumer's per-repo
   `infrastructure/scripts/publish-*.sh`), centralising the logic and killing the
-  drift SK-384 targets. The `load-repo-config` outputs the per-repo copy reads
+  drift A-384 targets. The `load-repo-config` outputs the per-repo copy reads
   (registries, scope, node-version file) become `with:` inputs instead.
 - **Build reuses Layer-1** `setup-project` + `build`; the publish legs are
   hand-rolled (they need `setup-node`'s `registry-url`/`scope`) and pin
@@ -128,13 +128,13 @@ reusable workflows stay few and pay setup once. See `.github/actions/README.md`.
   fed from each consumer's `repo-config.yaml` (the per-repo `load-repo-config`
   stays local). Composite actions inherit the calling job's permissions.
 - `lint-yaml` injects **this repo's own** `.yamllint.yml` (resolved relative to
-  `github.action_path`) so consumers carry no local copy (SK-438). The root file
+  `github.action_path`) so consumers carry no local copy (A-438). The root file
   stays the single source of truth — keep it in sync, don't fork a copy.
 - Tool versions/pins (pnpm, Node, yamllint, actionlint) **mirror `ci.yml`** so the
   dogfooded self-CI and the shipped actions never drift. Keep them aligned.
 - **This repo does not dogfood the actions via `uses:`** — same
   `sha_pinning_required` reason as the inline workflows below. They are authored
-  here and consumed cross-repo by `@<sha>`; Layer 2 (SK-415/416) wires them.
+  here and consumed cross-repo by `@<sha>`; Layer 2 (A-415/416) wires them.
 
 ### Why the PR-title check is inline (and there are no `./` callers)
 
@@ -158,13 +158,13 @@ caller stubs pointing at the `reusable-*` versions. The stock output of
 `/install-github-app` (floating `@v4`/`@v1` tags, no author-association gate)
 won't even start here — `sha_pinning_required` rejects unpinned actions — so
 these inline copies port the hardened `reusable-claude*.yml` bodies verbatim:
-SHA-pinned actions, the ASW-313 author-association gate, `persist-credentials:
+SHA-pinned actions, the A-313 author-association gate, `persist-credentials:
 false`, timeouts and review concurrency. The `workflow_call` `inputs` become
 literals and the review's `paths-ignore` (invalid on `workflow_call`) moves onto
 the real `pull_request` trigger. **Keep these in sync with their `reusable-*`
 counterparts** — same rule as the inline PR-title gate.
 
-### Status-check context (SK-400 / SK-405)
+### Status-check context (A-400 / A-405)
 
 `reusable-validate-pr-title.yml`'s job is named
 `Validate PR title is a Conventional Commit`. A reusable-workflow check renders

@@ -15,7 +15,7 @@ description: >-
 # contention dance — that dedicated job is deliberately omitted here; the single
 # built-in post-job save is what populates the cache.
 #
-# Trust boundary (SK-422): every `uses:` is SHA-pinned; no network beyond the
+# Trust boundary (A-422): every `uses:` is SHA-pinned; no network beyond the
 # pinned setup actions.
 
 inputs:

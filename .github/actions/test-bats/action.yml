@@ -6,7 +6,7 @@ description: >-
 # Layer-1 mix-in: a single step. bats is installed as the consumer's
 # devDependency (the `bats` npm package), so — like eslint/vitest/tsc — it is
 # invoked via `pnpm exec` and this action pins no third-party `uses:`.
-# Trust boundary: SK-422.
+# Trust boundary: A-422.
 
 inputs:
   paths:

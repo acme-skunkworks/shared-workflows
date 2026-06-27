@@ -2,7 +2,7 @@ name: ShellCheck
 description: >-
   Lint the repo's shell scripts with ShellCheck. Uses the binary preinstalled on
   GitHub-hosted ubuntu runners — no install step, no third-party `uses:` to pin
-  (ADR 0001 §5.7). Trust boundary: SK-422.
+  (ADR 0001 §5.7). Trust boundary: A-422.
 
 inputs:
   paths:
