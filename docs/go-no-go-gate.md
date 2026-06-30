@@ -61,7 +61,7 @@ one coarse bundle or six fine ones — so it never forces the split (ADR 0001 §
   `check_run.name`; the ruleset and the orchestrator match that literal. Emoji, spaces,
   `&` and `/` all survive into the check-run name (proven by the legacy `🔬 Build & Lint`
   and verified here for `GO/NO GO`). If a future GitHub change ever mangles the `/`, fall
-  back to **Option A**: mint the check-run explicitly with
+  back to **minting the check-run explicitly** with
   `POST /repos/{owner}/{repo}/check-runs` (`head_sha` = the PR head), which also needs
   `checks: write` and lets you attach custom annotations.
 
