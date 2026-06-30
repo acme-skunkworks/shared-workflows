@@ -562,9 +562,9 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
-          title="🚨 Release workflow failed"
+          title="🚨 Package release workflow failed"
           body=$(printf '%s\n' \
-            "The Release workflow failed on \`${GITHUB_REF_NAME}\`." \
+            "The Package release workflow failed on \`${GITHUB_REF_NAME}\`." \
             "" \
             "- Run: $RUN_URL" \
             "" \
@@ -578,7 +578,7 @@ jobs:
           # Search the text portion only — GitHub's full-text search indexes emoji
           # unreliably, so matching on 🚨 risks opening a duplicate every failure.
           existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
-            --search "Release workflow failed in:title" --json number --jq '.[0].number // empty')
+            --search "Package release workflow failed in:title" --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             echo "Appending to existing failure issue #$existing."
             gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
