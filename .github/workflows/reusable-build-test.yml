@@ -10,7 +10,7 @@ name: Reusable / Build & Test
 #
 # The `build` lane is a VERIFICATION build: `pnpm run build` proves the package
 # compiles/bundles cleanly, and its output is discarded. The published artefact
-# is rebuilt fresh in the release job (reusable-release.yml, A-417) with OIDC
+# is rebuilt fresh in the release job (reusable-pkg-release.yml, A-417) with OIDC
 # Trusted Publishing + provenance — never reused from here (ADR 0001 §4).
 #
 # Each sub-check has a boolean opt-out input (`build: false`, `typecheck: false`,

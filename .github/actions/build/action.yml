@@ -2,7 +2,7 @@ name: Build
 description: >-
   Run the package's build script (`pnpm run build`) to verify it compiles/bundles
   cleanly. This is a VERIFICATION build — its output is discarded; the published
-  artefact is rebuilt fresh in the release job (reusable-release.yml, A-417),
+  artefact is rebuilt fresh in the release job (reusable-pkg-release.yml, A-417),
   never reused from here. Assumes setup-project has already installed
   dependencies (ADR 0001 §5.7).
 

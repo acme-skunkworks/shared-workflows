@@ -177,7 +177,7 @@ repo's own Actions (D5).
 │    ├─ uses: …/reusable-validate-pr-title.yml@<sha>                 │
 │    ├─ <local extra jobs, e.g. validate:skills>                     │
 │    └─ go-no-go: needs:[all of the above]  if: always()  ← THE GATE │
-│  .github/workflows/release.yml    ← caller of reusable-release.yml  │
+│  .github/workflows/pkg-release.yml      ← caller stub (pkg release)│
 │  repo-config.yaml + load-repo-config (stays local)                 │
 └────────────────────────────────────────────────────────────────────┘
         │ cross-repo, SHA-pinned, Dependabot-bumped
@@ -186,7 +186,7 @@ repo's own Actions (D5).
 │  Layer 2 — reusable workflows (on: workflow_call)                   │
 │    reusable-lint.yml (A-415) · reusable-build-test.yml (A-416)    │
 │    reusable-validate-pr-title.yml (A-403, shipped)                 │
-│    reusable-release.yml (A-417) · reusable-claude*.yml (shipped)   │
+│    reusable-pkg-release.yml (A-417) · reusable-claude*.yml (shipped)│
 │  Layer 1 — composite actions (action.yml)                          │
 │    setup-project (pnpm + Node-from-.nvmrc + caches)                │
 │  Governance — versioned estate rulesets JSON (A-425)              │
@@ -206,7 +206,7 @@ non-standard job.
 
 `on: workflow_call`, parameterised by `with:` inputs (e.g. `build: false` for
 `markdownlint-config`), **never** receiving secrets on PR triggers (D5). The four canonical units —
-`lint`, `build-test`, `pr-title`, `release` — plus the already-shipped Claude pair. Crucially the
+`lint`, `build-test`, `pr-title`, `pkg-release` — plus the already-shipped Claude pair. Crucially the
 build/lint/test workflows **do not name themselves the gate**; the caller's job id + the reusable
 job name compose the check context, and the gate name is applied by the aggregator in 5.4.
 
@@ -281,7 +281,7 @@ the expensive axis and splitting at the _action_ layer is the cheap one. Therefo
   (A-415 — setup + eslint + markdown + yaml + changelog) and `reusable-build-test.yml`
   (A-416 — setup + build + typecheck + test + infra) each pay setup **once** and run several
   checks; plus the standalone-by-nature `reusable-validate-pr-title.yml` (no setup),
-  `reusable-release.yml` (different trigger + secrets), and the Claude pair. **Deliberately not**
+  `reusable-pkg-release.yml` (different trigger + secrets), and the Claude pair. **Deliberately not**
   one reusable workflow per linter — that multiplies setup for no benefit a step boundary doesn't
   already give.
 - **Two escape hatches for partial opt-out**, in increasing order of cost:
