@@ -73,8 +73,10 @@ messages, PR titles/bodies, and any user-facing strings.
   ([community #18601](https://github.com/orgs/community/discussions/18601)), and
   `sha_pinning_required` rejects an unpinned local ref. The full-path form is also
   what populates `github.action_path` so `lint-yaml`'s `.yamllint.yml` injection
-  resolves. `reusable-lint.yml` pins to the actions' commit (no release tag exists
-  yet); the release process maintains it once tags land.
+  resolves. `reusable-lint.yml` pins these to the **`v0.8.0`** tag's SHA
+  (`@7f543bef1… # v0.8.0`) — the first release whose tag carries every composite
+  action; Dependabot bumps it like any other tag pin. (The full release history
+  was backfilled in A-585: `v0.1.0`–`v0.8.0` plus the `v1.0.0` stable release.)
 
 ## The pkg-release workflow (`reusable-pkg-release.yml`, A-417)
 

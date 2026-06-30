@@ -137,25 +137,25 @@ jobs:
         # skip it when a repo runs YAML-only (yamllint/actionlint use pip + the
         # pinned installer, not pnpm).
         if: ${{ inputs.eslint || inputs.markdown || inputs.changelog }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
       - name: 🧹 ESLint
         if: ${{ inputs.eslint }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/eslint@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/eslint@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
         with:
           args: ${{ inputs.eslint-args }}
 
       - name: 📝 Lint Markdown
         if: ${{ inputs.markdown }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
         with:
           globs: ${{ inputs.markdown-globs }}
 
       - name: 📐 Lint YAML
         if: ${{ inputs.yaml }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/lint-yaml@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-yaml@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
         with:
           paths: ${{ inputs.yaml-paths }}
           actionlint: ${{ inputs.actionlint }}
@@ -164,6 +164,6 @@ jobs:
 
       - name: 🗒️ Validate changelog
         if: ${{ inputs.changelog }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/changelog-validate@132d746d045a1356c1dc5b5599dda4be89a49738 # shared-workflows actions @132d746 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/changelog-validate@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
         with:
           script: ${{ inputs.changelog-script }}
