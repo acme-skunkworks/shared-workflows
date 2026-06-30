@@ -27,7 +27,7 @@ name: Reusable / Lint
 # STATUS-CHECK CONTEXT: the job is named `Lint`; a reusable-workflow check
 # renders as `<caller-job-id> / <job-name>`, so callers SHOULD use the caller
 # job id `lint`, giving `lint / Lint`. The estate's required check is the
-# consumer's local `go/no-go` aggregator (A-424), so this context is not
+# consumer's local `GO/NO GO` aggregator (A-424), so this context is not
 # ruleset-pinned — but keep the id/name stable for legibility.
 #
 # Consume from another repo (SHA-pinned + Dependabot — see README):

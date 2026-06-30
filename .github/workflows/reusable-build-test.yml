@@ -5,7 +5,7 @@ name: Reusable / Build & Test
 # ONCE, then composes the shared Layer-1 build/test composite actions: build,
 # typecheck (tsc), test-vitest and the infra mix-ins shellcheck + test-bats.
 # This is the `🔬 Build & Lint`-equivalent work, MINUS the gate naming — the gate
-# lives in each consumer's local `go/no-go` aggregator (A-424), so this workflow
+# lives in each consumer's local `GO/NO GO` aggregator (A-424), so this workflow
 # deliberately does NOT name itself the gate.
 #
 # The `build` lane is a VERIFICATION build: `pnpm run build` proves the package
@@ -32,7 +32,7 @@ name: Reusable / Build & Test
 # STATUS-CHECK CONTEXT: the job is named `Build & Test`; a reusable-workflow
 # check renders as `<caller-job-id> / <job-name>`, so callers SHOULD use the
 # caller job id `build-test`, giving `build-test / Build & Test`. The estate's
-# required check is the consumer's local `go/no-go` aggregator (A-424), so this
+# required check is the consumer's local `GO/NO GO` aggregator (A-424), so this
 # context is not ruleset-pinned — but keep the id/name stable for legibility.
 #
 # Consume from another repo (SHA-pinned + Dependabot — see README):
