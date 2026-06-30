@@ -1,12 +1,12 @@
-# ADR 0001 — Shared CI architecture for the npm-package estate (layered reusable workflows + per-repo `go/no-go` gate)
+# ADR 0001 — Shared CI architecture for the npm-package estate (layered reusable workflows + per-repo `GO/NO GO` gate)
 
 - **Status:** Proposed (architecture deliverable for the Shared Workflows project — direction,
   not implementation). Direction chosen: **layered building blocks (composite actions + reusable
   `workflow_call` workflows) consumed by thin per-repo callers, with the release gate owned by a
-  per-repo `go/no-go` aggregator**. See §5–§6.
+  per-repo `GO/NO GO` aggregator**. See §5–§6.
 - **Date:** 2026-06-25
 - **Deciders:** Rob Easthope
-- **Related:** A-411 (stand up shared-workflows), A-412 (`go/no-go` release gate) and its children
+- **Related:** A-411 (stand up shared-workflows), A-412 (`GO/NO GO` release gate) and its children
   A-415/416/417/418/419/420/421/425, A-403/405 (PR-title gate, estate lockstep), A-422 (pre-GA
   SHA-pin + security review), A-428 (shared Claude pair callers); release-orchestrator ADR 0001
   (event-driven triggering); A-384 (drifting per-repo `infrastructure/` copies).
@@ -30,7 +30,7 @@ single-package libraries, and **expose exactly the pass/fail signal the orchestr
 
 This ADR was commissioned to answer a specific question: _take the estate's most fleshed-out CI
 (Tempest) as a reference and decide how to build shared, performant workflows that slot into the
-upcoming `go/no-go` release gate._ The short answer is that **Tempest is the right teacher and the
+upcoming `GO/NO GO` release gate._ The short answer is that **Tempest is the right teacher and the
 wrong template** — §3 explains why — and that the shared workflows should be **lean, layered, and
 gate-agnostic**, leaving the gate to a tiny per-repo aggregator.
 
@@ -78,7 +78,7 @@ posture in §5.5.
 head SHA for a check-run **whose `.name` matches a literal string**, taking the most recent run by
 monotonic `id`, every 30 s for ~12 min, and merging only on `conclusion == success`
 (`--match-head-commit` TOCTOU guard, A-334). Today that literal is `🔬 Build & Lint`. The estate is
-mid-migration to a single, purpose-built gate named **`go/no-go`** (A-412): an `if: always()`
+mid-migration to a single, purpose-built gate named **`GO/NO GO`** (A-412): an `if: always()`
 aggregator job that `needs:` every real CI job, whose **intrinsic check-run is the gate**. Because a
 check-run can only be minted by a GitHub App (the repo's own Actions), it **cannot be forged** by a
 push-scoped token or a fork — and a ruleset pins the required reporting integration to GitHub Actions
@@ -92,7 +92,7 @@ a consumer to emit.
 | #   | Driver                              | Why it matters                                                                                                                                                                                                                  |
 | --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | D1  | **Single source of truth**          | Kill the drift across copy-pasted `ci.yml`/`infrastructure/` (A-384). One place to bump a SHA or a rule.                                                                                                                        |
-| D2  | **Orchestrator-compatibility**      | CI must emit the exact gate check-run the orchestrator polls (`go/no-go`, migrating from `🔬 Build & Lint`), on `release-please--*` PRs, as a required check.                                                                   |
+| D2  | **Orchestrator-compatibility**      | CI must emit the exact gate check-run the orchestrator polls (`GO/NO GO`, migrating from `🔬 Build & Lint`), on `release-please--*` PRs, as a required check.                                                                   |
 | D3  | **Performance for small repos**     | Optimise the actual bottleneck (spin-up, install, tool fetch), not imaginary compute. Don't import monorepo machinery a single package can't amortise.                                                                          |
 | D4  | **Flexibility without forking**     | Repos share 90% but each keeps a legitimate 10% (no-build config package, skills metadata gate, Octavo's CircleCI input). The design must absorb that without per-repo copies of the shared logic.                              |
 | D5  | **Security / supply-chain**         | Public repos, assumed-exfiltratable CI. PR-triggered workflows take **no secrets** and never use `pull_request_target`; anything privileged is push-to-`main` only; all cross-repo `uses:` are SHA-pinned (A-411 scope, A-422). |
@@ -135,18 +135,18 @@ monorepo-scale half on the shelf until a monorepo actually consumes them.
 - **C — Layered: composite actions _and_ thin reusable workflows (chosen).** Low-level actions
   (setup/cache) are the reusable atoms; reusable workflows compose them into standard jobs; repos
   with standard needs call the workflow, repos that must customise drop to the actions. Matches the
-  existing `reusable-*` direction and A-411's "commodity logic shared, `go/no-go` stays per-repo".
+  existing `reusable-*` direction and A-411's "commodity logic shared, `GO/NO GO` stays per-repo".
 
 **Chosen: C.** It is the only option that delivers D1 _and_ D4 simultaneously.
 
-### 4.2 Who owns the `go/no-go` gate check-run
+### 4.2 Who owns the `GO/NO GO` gate check-run
 
-- **A — A shared reusable workflow emits `go/no-go` directly.** Every consumer gets the gate "for
+- **A — A shared reusable workflow emits `GO/NO GO` directly.** Every consumer gets the gate "for
   free", but it boxes in repos that add their own checks (the aggregator must `needs:` _those_ too,
   which a central workflow can't see).
-- **B — A per-repo `go/no-go` aggregator that `needs:` the shared jobs (chosen).** Each repo keeps a
+- **B — A per-repo `GO/NO GO` aggregator that `needs:` the shared jobs (chosen).** Each repo keeps a
   ~10-line `if: always()` aggregator that depends on its real jobs (shared callers _and_ any local
-  extras) and emits the intrinsic `go/no-go` check-run. The shared workflows stay gate-agnostic
+  extras) and emits the intrinsic `GO/NO GO` check-run. The shared workflows stay gate-agnostic
   (A-416 explicitly: build-test is "`🔬 Build & Lint`-equivalent, **minus the gate naming**"). This
   is already the shipped reference in `npm-package-template` (A-424, Done).
 
@@ -214,13 +214,13 @@ The PR-title workflow keeps its load-bearing name: the caller job id must be `pr
 name `Validate PR title is a Conventional Commit`, giving the estate-pinned context
 `pr-title / Validate PR title is a Conventional Commit` (A-403/405). **Do not rename either half.**
 
-### 5.4 The gate — per-repo `go/no-go` aggregator
+### 5.4 The gate — per-repo `GO/NO GO` aggregator
 
 Each consumer keeps a tiny job:
 
 ```yaml
 go-no-go:
-  name: go/no-go
+  name: GO/NO GO
   needs: [build-and-lint, pr-title, yaml-lint, infra] # + any local jobs
   if: ${{ always() }} # MANDATORY, else it skips and never reports
   runs-on: ubuntu-latest
@@ -231,7 +231,7 @@ go-no-go:
         …
 ```
 
-Its **intrinsic check-run** `go/no-go` is what the orchestrator polls and what the ruleset requires
+Its **intrinsic check-run** `GO/NO GO` is what the orchestrator polls and what the ruleset requires
 (pinned to the GitHub Actions integration, so it is unforgeable — A-418/425). For **Octavo-class
 deploy targets** (future, §8) the same aggregator gains a bounded-poll step that reads CircleCI's
 typegen status as an **input** (A-421) — CircleCI is never the authority and the orchestrator never
@@ -292,7 +292,7 @@ the expensive axis and splitting at the _action_ layer is the cheap one. Therefo
      standard bundle doesn't fit.
   3. **Promote a check to its own job/workflow** only when a repo genuinely wants it as a _separate
      required check-run_ or for parallelism worth the extra setup — the exception, not the default.
-- **The gate is granularity-agnostic.** The `go/no-go` aggregator just `needs:` whatever jobs the
+- **The gate is granularity-agnostic.** The `GO/NO GO` aggregator just `needs:` whatever jobs the
   repo wired — one coarse job or six fine ones — so the gate never forces the choice (§5.4).
 
 Net: maximum composability where it's free (actions/steps), minimum setup tax where it's expensive
@@ -317,7 +317,7 @@ actions" → "promote to its own check".
 ### Bad / costs
 
 - **The transitional double-name window.** During rollout the orchestrator dual-accepts
-  `🔬 Build & Lint` _and_ `go/no-go` (A-419); until every served repo emits `go/no-go` and the
+  `🔬 Build & Lint` _and_ `GO/NO GO` (A-419); until every served repo emits `GO/NO GO` and the
   orchestrator goes single-name, both must be kept working. This is real coordination cost (§7).
 - **Inline dogfooding drift risk** in this repo (the `reusable-*` ↔ inline copies must be kept in
   sync — an existing, accepted CLAUDE.md hazard).
@@ -339,12 +339,12 @@ The forward path is already ticketed under **A-412**; this ADR ratifies it rathe
 1. **Author the building blocks** — A-415 (`lint`), A-416 (`build-test`), A-417 (`release`),
    PR-title shipped (A-403); `setup-project` composite. (A-411 umbrella, In Progress.)
 2. **Define the gate pattern + ruleset** — A-418; version the rulesets in this repo — A-425.
-3. **Reference consumer** — `npm-package-template` already adopts shared callers + local `go/no-go`
-   (A-424/413, **Done**) and is the canonical `go/no-go` emitter.
-4. **Roll out across the fleet** — A-420: add callers + local aggregator + required-`go/no-go`
+3. **Reference consumer** — `npm-package-template` already adopts shared callers + local `GO/NO GO`
+   (A-424/413, **Done**) and is the canonical `GO/NO GO` emitter.
+4. **Roll out across the fleet** — A-420: add callers + local aggregator + required-`GO/NO GO`
    ruleset to `eslint-config`, `agent-skills`, `markdownlint-config` (and Octavo, via A-421),
    **dual-running** alongside `🔬 Build & Lint`.
-5. **Flip the orchestrator** — A-419: `CHECK_NAME` dual-accept → `go/no-go`-only once every served
+5. **Flip the orchestrator** — A-419: `CHECK_NAME` dual-accept → `GO/NO GO`-only once every served
    repo emits it (keep the A-334 TOCTOU guard).
 6. **Shared Claude pair callers** — A-428 (and per-repo, e.g. A-433 Octavo).
 7. **Pre-GA gate** — A-422: SHA-pin policy enforcement + security review of the shared workflows.
@@ -352,18 +352,18 @@ The forward path is already ticketed under **A-412**; this ADR ratifies it rathe
 ### 7.1 Decommission the old gate immediately — A-437
 
 The _forward_ migration is well covered, but the **decommission of `🔬 Build & Lint` as the gate** was
-only **implicit** in A-419's "then `go/no-go`-only" clause — not its own tracked step, so it risked
+only **implicit** in A-419's "then `GO/NO GO`-only" clause — not its own tracked step, so it risked
 being "finished" while stale scaffolding lingered. That gap is now closed by **A-437** (child of
 A-412, raised alongside this ADR).
 
-The policy decision is to **collapse the double-name window as soon as `go/no-go` is in place and
+The policy decision is to **collapse the double-name window as soon as `GO/NO GO` is in place and
 verified** across every served repo — not to leave `🔬 Build & Lint` dual-accepted indefinitely.
-A-437 fires immediately after A-420 (fleet emits a required `go/no-go`) + A-419 (orchestrator
+A-437 fires immediately after A-420 (fleet emits a required `GO/NO GO`) + A-419 (orchestrator
 dual-accepting), and deletes:
 
-- the orchestrator's dual-accept of `🔬 Build & Lint`, leaving it polling `go/no-go` **only** (keep
+- the orchestrator's dual-accept of `🔬 Build & Lint`, leaving it polling `GO/NO GO` **only** (keep
   the A-334 TOCTOU guard);
-- the `🔬 Build & Lint` required-check in each repo's ruleset, swapped for `go/no-go` pinned to the
+- the `🔬 Build & Lint` required-check in each repo's ruleset, swapped for `GO/NO GO` pinned to the
   GitHub Actions integration;
 - the transitional _"do NOT rename… dual-accept"_ comments in `npm-package-template`'s `ci.yml` and
   any shared docs.
