@@ -34,7 +34,7 @@ below.
 > **Block-direct-pushes** is the combined effect of the `pull_request` rule
 > (changes must go through a PR) and `non_fast_forward` (no force-push) — there is
 > no separate "no direct push" rule type.
-
+>
 > **No bypass actors.** `bypass_actors` is empty, so enforcement is strict: even an
 > org admin cannot push directly or merge a non-conforming PR. Emergency access
 > therefore means **temporarily toggling the ruleset to `evaluate`/`disabled`** (or
