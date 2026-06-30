@@ -42,7 +42,7 @@ messages, PR titles/bodies, and any user-facing strings.
 │   ├── reusable-validate-pr-title.yml   # PRODUCT: conventional PR title
 │   ├── reusable-lint.yml                # PRODUCT: coarse lint bundle (Layer 2)
 │   ├── reusable-build-test.yml          # PRODUCT: coarse build/test bundle (Layer 2)
-│   ├── reusable-release.yml             # PRODUCT: build-once → npm OIDC + Packages mirror (Layer 2)
+│   ├── reusable-pkg-release.yml         # PRODUCT: build-once → npm OIDC + Packages mirror (Layer 2)
 │   ├── claude.yml                       # self-host: inline @claude on THIS repo
 │   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
 │   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
@@ -76,12 +76,15 @@ messages, PR titles/bodies, and any user-facing strings.
   resolves. `reusable-lint.yml` pins to the actions' commit (no release tag exists
   yet); the release process maintains it once tags land.
 
-## The release workflow (`reusable-release.yml`, A-417)
+## The pkg-release workflow (`reusable-pkg-release.yml`, A-417)
 
-`reusable-release.yml` ports the estate's hardened release flow (build-once →
+`reusable-pkg-release.yml` ports the estate's hardened release flow (build-once →
 npm OIDC Trusted Publishing → GitHub Packages mirror → tag + GitHub release;
-A-328/326/323) into a `workflow_call`. Unlike the lint/build-test bundles it
-publishes, so it carries some unique rules:
+A-328/326/323) into a `workflow_call`. It is named **`pkg-release`** everywhere
+(this Layer-2 file `reusable-pkg-release.yml`; each consumer's caller stub
+`pkg-release.yml`) to mark it a _package_ release — an npm publish, not an app
+deployment (A-543). Unlike the lint/build-test bundles it publishes, so it
+carries some unique rules:
 
 - **No `secrets:` block.** The npm leg authenticates via OIDC Trusted Publishing
   (no `NPM_TOKEN`); the Packages leg, `gh release create` and the failure issue
@@ -89,7 +92,7 @@ publishes, so it carries some unique rules:
   the caller grants the superset (`contents`/`id-token`/`issues`/`packages`/
   `attestations: write`); each reusable job narrows from there.
 - **npm validates the _caller_, not this callee.** npm Trusted Publishing matches
-  the OIDC `workflow_ref` (the consumer's own `release.yml` caller filename +
+  the OIDC `workflow_ref` (the consumer's own `pkg-release.yml` caller filename +
   repo + environment), not the reusable `job_workflow_ref`. So each consuming
   package registers **its own caller filename** as the npmjs.com Trusted
   Publisher, and `id-token: write` must sit on **both** the caller job and the

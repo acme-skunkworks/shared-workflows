@@ -1,9 +1,9 @@
-name: Reusable / Release
+name: Reusable / Package release
 
 # Reusable (workflow_call) version of the estate's hardened release flow — the
 # build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag +
 # GitHub release pipeline (ports A-328 / A-326 / A-323 into one source of
-# truth, replacing the per-repo `release.yml` copies that would otherwise drift,
+# truth, replacing the per-repo `pkg-release.yml` copies that would otherwise drift,
 # A-384/A-417).
 #
 # Three jobs, each least-privileged:
@@ -26,7 +26,7 @@ name: Reusable / Release
 # settings.
 #
 # npm TRUSTED PUBLISHING THROUGH A REUSABLE WORKFLOW: npm validates the OIDC
-# `workflow_ref` claim — the CALLER's workflow filename (e.g. `release.yml`) +
+# `workflow_ref` claim — the CALLER's workflow filename (e.g. `pkg-release.yml`) +
 # repo + environment — NOT this reusable callee (`job_workflow_ref`). So each
 # consuming package configures its npmjs.com Trusted Publisher against ITS OWN
 # caller filename, and `id-token: write` must be present on BOTH the caller job
@@ -63,7 +63,7 @@ name: Reusable / Release
 # Consume from another repo (SHA-pinned + Dependabot — see README). The caller
 # grants the SUPERSET of the per-job permissions below:
 #
-#   name: Release
+#   name: Package release
 #   on:
 #     push:
 #       branches: [main]   # NO workflow_dispatch (A-326)
@@ -72,7 +72,7 @@ name: Reusable / Release
 #     cancel-in-progress: false
 #   jobs:
 #     release:
-#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-release.yml@<sha>
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-pkg-release.yml@<sha>
 #       with:
 #         npm-scope: "@acme-skunkworks"
 #       permissions:
