@@ -1,6 +1,6 @@
 ---
 title: "Add the Layer-1 composite-action layer (setup-project + lint/test mix-ins)"
-release_note: "Ten granular composite actions consumers pick-and-mix — the Layer-1 primitives the coarse reusable workflows compose."
+release_note: "Nine granular composite actions consumers pick-and-mix — the Layer-1 primitives the coarse reusable workflows compose."
 version: "0.2.0"
 created_at: "2026-06-26T14:35:44Z"
 category: feature

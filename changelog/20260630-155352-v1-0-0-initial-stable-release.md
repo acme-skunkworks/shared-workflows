@@ -29,8 +29,8 @@ issues: ["A-585"]
 
 ## Changed
 
-- `reusable-lint.yml` now pins its sibling Layer-1 composite actions to the
-  `v0.8.0` tag instead of a bare pre-release commit SHA, so Dependabot can track
-  and bump the same-repo refs.
+- `reusable-lint.yml` and `reusable-build-test.yml` now pin their sibling Layer-1
+  composite actions to the `v0.8.0` tag instead of a bare pre-release commit SHA,
+  so Dependabot can track and bump the same-repo refs.
 - Re-synced the shared `@acme-skunkworks/agent-skills` bundles (wave 3).
   (Repo-internal tooling; invisible to consumers.)
