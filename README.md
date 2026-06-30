@@ -9,6 +9,10 @@ One authoritative copy of each common workflow, edited once and consumed
 everywhere via `workflow_call`. Instead of copy-pasting the same `claude.yml`
 into a dozen repos, each repo keeps a small **caller stub** that points here.
 
+**Further reading:** [ADR 0001](docs/adr/0001-shared-ci-architecture-for-npm-packages.md)
+(the layered architecture) and [the `GO/NO GO` gate](docs/go-no-go-gate.md) (the per-repo
+release gate pattern).
+
 ## Available workflows
 
 | Workflow                          | Purpose                                                            | Secrets                   |
