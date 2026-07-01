@@ -64,6 +64,15 @@ messages, PR titles/bodies, and any user-facing strings.
   (A-329).
 - **`paths-ignore`** cannot be set on `workflow_call`, so the Claude review's
   paths-ignore lives in the caller stub.
+- **Top-level `concurrency:` must NOT appear in a `reusable-*.yml`.** A called
+  reusable runs as the caller's job, so a workflow-level concurrency group
+  resolves to the same value the caller declares and GitHub deadlock-cancels the
+  run at startup ("a deadlock was detected … between a top level workflow and
+  '<job>'"). It is invisible to `actionlint` and to the REST API (A-621), so a
+  guard step in `ci.yml` fails the build if any `reusable-*.yml` reintroduces
+  one. Concurrency lives in the **caller stub**, where the trigger sits; the
+  inline self-hosted copies (`claude-code-review.yml`, `ci.yml`) keep theirs
+  because they are standalone workflows, not `workflow_call` callees.
 - The `reusable-` prefix avoids a filename collision with the same-named caller
   stub in a consumer.
 - **A Layer-2 workflow references its sibling Layer-1 actions by full cross-repo
