@@ -137,6 +137,16 @@ on:
         type: string
         required: false
         default: npm-release
+      build:
+        description: >-
+          Run the verification build (`pnpm run <build-script>`) before packing.
+          A build-less package — a config-only or bundle-only repo with no `build`
+          script (e.g. markdownlint-config, agent-skills) — sets this to `false`;
+          `npm pack` still produces the tarball from the package sources. Mirrors
+          reusable-build-test.yml's `build` opt-out.
+        type: boolean
+        required: false
+        default: true
       build-script:
         description: pnpm script that builds the package before packing.
         type: string
@@ -204,6 +214,9 @@ jobs:
           node-version-file: ${{ inputs.node-version-file }}
 
       - name: 🏗️ Build
+        # Skipped for build-less packages (`build: false`) — the pack step below
+        # still produces the tarball from the package sources.
+        if: ${{ inputs.build }}
         uses: acme-skunkworks/shared-workflows/.github/actions/build@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           script: ${{ inputs.build-script }}
