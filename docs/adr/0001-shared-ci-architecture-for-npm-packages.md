@@ -77,8 +77,8 @@ posture in §5.5.
 `orchestrate-releases.yml` decides "go" by polling the **GitHub Checks API** on the release PR's
 head SHA for a check-run **whose `.name` matches a literal string**, taking the most recent run by
 monotonic `id`, every 30 s for ~12 min, and merging only on `conclusion == success`
-(`--match-head-commit` TOCTOU guard, A-334). Today that literal is `🔬 Build & Lint`. The estate is
-mid-migration to a single, purpose-built gate named **`GO/NO GO`** (A-412): an `if: always()`
+(`--match-head-commit` TOCTOU guard, A-334). That literal is the single, purpose-built gate named
+**`GO/NO GO`** (A-412): an `if: always()`
 aggregator job that `needs:` every real CI job, whose **intrinsic check-run is the gate**. Because a
 check-run can only be minted by a GitHub App (the repo's own Actions), it **cannot be forged** by a
 push-scoped token or a fork — and a ruleset pins the required reporting integration to GitHub Actions
@@ -92,7 +92,7 @@ a consumer to emit.
 | #   | Driver                              | Why it matters                                                                                                                                                                                                                  |
 | --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | D1  | **Single source of truth**          | Kill the drift across copy-pasted `ci.yml`/`infrastructure/` (A-384). One place to bump a SHA or a rule.                                                                                                                        |
-| D2  | **Orchestrator-compatibility**      | CI must emit the exact gate check-run the orchestrator polls (`GO/NO GO`, migrating from `🔬 Build & Lint`), on `release-please--*` PRs, as a required check.                                                                   |
+| D2  | **Orchestrator-compatibility**      | CI must emit the exact gate check-run the orchestrator polls (`GO/NO GO`), on `release-please--*` PRs, as a required check.                                                                                                     |
 | D3  | **Performance for small repos**     | Optimise the actual bottleneck (spin-up, install, tool fetch), not imaginary compute. Don't import monorepo machinery a single package can't amortise.                                                                          |
 | D4  | **Flexibility without forking**     | Repos share 90% but each keeps a legitimate 10% (no-build config package, skills metadata gate, Octavo's CircleCI input). The design must absorb that without per-repo copies of the shared logic.                              |
 | D5  | **Security / supply-chain**         | Public repos, assumed-exfiltratable CI. PR-triggered workflows take **no secrets** and never use `pull_request_target`; anything privileged is push-to-`main` only; all cross-repo `uses:` are SHA-pinned (A-411 scope, A-422). |
@@ -316,9 +316,10 @@ actions" → "promote to its own check".
 
 ### Bad / costs
 
-- **The transitional double-name window.** During rollout the orchestrator dual-accepts
-  `🔬 Build & Lint` _and_ `GO/NO GO` (A-419); until every served repo emits `GO/NO GO` and the
-  orchestrator goes single-name, both must be kept working. This is real coordination cost (§7).
+- **The transitional double-name window (now closed).** During rollout the orchestrator dual-accepted
+  `🔬 Build & Lint` _and_ `GO/NO GO` (A-419) so repos could adopt the aggregator without a flag day;
+  A-596 then collapsed it to `GO/NO GO`-only and A-437 dropped the old name from the rulesets. This
+  was real but bounded coordination cost (§7).
 - **Inline dogfooding drift risk** in this repo (the `reusable-*` ↔ inline copies must be kept in
   sync — an existing, accepted CLAUDE.md hazard).
 - **Per-repo aggregator boilerplate** (~10 lines × N repos) is duplicated by design (option 4.2-B);
@@ -343,7 +344,7 @@ The forward path is already ticketed under **A-412**; this ADR ratifies it rathe
    (A-424/413, **Done**) and is the canonical `GO/NO GO` emitter.
 4. **Roll out across the fleet** — A-420: add callers + local aggregator + required-`GO/NO GO`
    ruleset to `eslint-config`, `agent-skills`, `markdownlint-config` (and Octavo, via A-421),
-   **dual-running** alongside `🔬 Build & Lint`.
+   initially **dual-run** alongside `🔬 Build & Lint` (dropped as the gate in A-437).
 5. **Flip the orchestrator** — A-419: `CHECK_NAME` dual-accept → `GO/NO GO`-only once every served
    repo emits it (keep the A-334 TOCTOU guard).
 6. **Shared Claude pair callers** — A-428 (and per-repo, e.g. A-433 Octavo).
@@ -356,10 +357,10 @@ only **implicit** in A-419's "then `GO/NO GO`-only" clause — not its own track
 being "finished" while stale scaffolding lingered. That gap is now closed by **A-437** (child of
 A-412, raised alongside this ADR).
 
-The policy decision is to **collapse the double-name window as soon as `GO/NO GO` is in place and
+The policy decision was to **collapse the double-name window as soon as `GO/NO GO` was in place and
 verified** across every served repo — not to leave `🔬 Build & Lint` dual-accepted indefinitely.
-A-437 fires immediately after A-420 (fleet emits a required `GO/NO GO`) + A-419 (orchestrator
-dual-accepting), and deletes:
+A-437 ran immediately after A-420 (fleet emits a required `GO/NO GO`) + A-596 (orchestrator
+`GO/NO GO`-only), and deleted:
 
 - the orchestrator's dual-accept of `🔬 Build & Lint`, leaving it polling `GO/NO GO` **only** (keep
   the A-334 TOCTOU guard);
@@ -368,8 +369,8 @@ dual-accepting), and deletes:
 - the transitional _"do NOT rename… dual-accept"_ comments in `npm-package-template`'s `ci.yml` and
   any shared docs.
 
-The `🔬 Build & Lint` **job** is not removed — it survives as an ordinary CI job feeding the
-aggregator's `needs:`. Only its **gate role** and the transitional scaffolding go.
+The `🔬 Build & Lint` **job** was not removed — it survives as an ordinary CI job feeding the
+aggregator's `needs:`. Only its **gate role** and the transitional scaffolding went.
 
 ---
 
