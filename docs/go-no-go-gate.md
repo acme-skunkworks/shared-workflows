@@ -58,15 +58,18 @@ one coarse bundle or six fine ones — so it never forces the split (ADR 0001 §
   the verdict. If a repo has jobs that should _never_ skip, tighten the `jq` to allow
   `skipped` only for the expected job names rather than blanket-accepting it.
 - **The check name is load-bearing — keep it exactly `GO/NO GO`.** The job `name:` becomes
-  `check_run.name`; the ruleset and the orchestrator match that literal. Emoji, spaces,
-  `&` and `/` all survive into the check-run name (proven by the legacy `🔬 Build & Lint`
-  and verified here for `GO/NO GO`). If a future GitHub change ever mangles the `/`, fall
+  `check_run.name`; the ruleset and the orchestrator match that literal. Spaces and `/`
+  survive verbatim into the check-run name (`GO/NO GO` keeps both). If a future GitHub
+  change ever mangles the `/`, fall
   back to **minting the check-run explicitly** with
   `POST /repos/{owner}/{repo}/check-runs` (`head_sha` = the PR head), which also needs
   `checks: write` and lets you attach custom annotations.
 
 ## Rollout
 
-During migration the orchestrator **dual-accepts** both `🔬 Build & Lint` and `GO/NO GO`
-(A-419), so a repo can adopt the aggregator without a flag day. Once every served repo
-emits `GO/NO GO`, the orchestrator and the rulesets drop the old name (A-437).
+The migration is complete: the orchestrator and every served repo's ruleset require the
+`GO/NO GO` check-run only. A-419 opened a dual-accept window (`🔬 Build & Lint` **or**
+`GO/NO GO`) so repos could adopt the aggregator without a flag day; A-596 collapsed it to
+`GO/NO GO`-only once every served repo emitted it, and A-437 removed the old name from the
+rulesets. The `🔬 Build & Lint` job, where it still exists, survives as ordinary CI feeding
+the aggregator's `needs:` — it is no longer a gate.
