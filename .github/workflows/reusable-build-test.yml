@@ -41,7 +41,8 @@ name: Reusable / Build & Test
 # hands this workflow a read-only token; the `build-test` job only needs
 # `contents: read`, which that default already covers, but declaring a
 # `permissions:` block resets every OTHER scope to none — so once a sibling caller
-# job (or the aggregator) needs more, list the scope here too. Get it wrong and
+# job (or the aggregator) needs more, add that scope here too, or scope it on the
+# calling job via `jobs.<id>.permissions:`. Get it wrong and
 # the run dies at compile time with a `startup_failure` — no jobs, no logs, and
 # the REST API hides the reason (read the one-line error on the Actions UI run
 # page).

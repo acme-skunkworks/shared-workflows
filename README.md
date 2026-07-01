@@ -41,7 +41,7 @@ granted and the run dies at compile time with a **`startup_failure`**: no jobs,
 no logs, and the REST API does not expose the reason (`gh run view` only offers a
 generic "workflow file issue" hint; annotations 404). **Read the one-line error
 on the Actions UI run page.** This is the single most common adoption trap
-(A-621) — and the usual reason a consumer's Claude review "never posts".
+(A-621) — and the usual reason a consumer's Claude review 'never posts'.
 
 So every caller stub below declares the top-level `permissions:` block its
 reusable needs (a job-level block on the calling job — as the

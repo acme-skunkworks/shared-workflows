@@ -13,7 +13,7 @@ name: Reusable / Claude Code Review
 # the `pull-requests: write` / `id-token: write` it needs, and the run dies at
 # compile time with a `startup_failure` — no jobs, no logs, and the REST API hides
 # the reason (read the one-line error on the Actions UI run page). This is the
-# most common cause of "Claude review never posts" across consumers. So the caller
+# most common cause of 'Claude review never posts' across consumers. So the caller
 # MUST declare every scope this job needs.
 #
 # Consume from another repo (SHA-pinned + Dependabot — see README):
