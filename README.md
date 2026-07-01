@@ -90,7 +90,7 @@ permissions:
 
 jobs:
   claude:
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@<sha> # v1.0.0
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@<sha> # v1.0.2
     secrets: inherit
 ```
 
@@ -130,7 +130,7 @@ permissions:
 
 jobs:
   claude-review:
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@<sha> # v1.0.0
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@<sha> # v1.0.2
     secrets: inherit
 ```
 
@@ -156,7 +156,7 @@ permissions:
 
 jobs:
   pr-title: # ← keep this job id stable across the estate (see below)
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@<sha> # v1.0.0
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@<sha> # v1.0.2
 ```
 
 **Required-check context (A-400 / A-405).** The reusable job is named
@@ -174,7 +174,7 @@ comment, and let Dependabot bump it — exactly how the estate pins third-party
 actions:
 
 ```yaml
-uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@1a2b3c4… # v1.0.0
+uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@1a2b3c4… # v1.0.2
 ```
 
 Add the `github-actions` ecosystem to each consumer's `.github/dependabot.yml`
@@ -196,7 +196,7 @@ updates:
 ```
 
 Releases here are tagged (`vX.Y.Z`); use the SHA the tag points at. The current
-release is **`v1.0.0`** — the full history (`v0.1.0`–`v1.0.0`) is in
+release is **`v1.0.2`** — the full history (`v0.1.0`–`v1.0.2`) is in
 [`changelog/`](changelog/), and each tag has a matching GitHub release.
 
 ## Contributing
