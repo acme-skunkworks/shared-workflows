@@ -60,6 +60,15 @@ name: Reusable / Package release
 # This repo does NOT dogfood this workflow (it publishes nothing, and the same
 # circularity that inlines ci.yml/claude.yml applies); consumers exercise it.
 #
+# REQUIRED CALLER PERMISSIONS (A-621): a called reusable workflow's job cannot be
+# granted more than the caller's GITHUB_TOKEN holds. Under the org default
+# `default_workflow_permissions: read`, a caller that omits the `permissions:`
+# block below hands the publish jobs a read-only token; they can't get the
+# `contents`/`id-token`/`packages`/`attestations`/`issues: write` they need and
+# the run dies at compile time with a `startup_failure` — no jobs, no logs, and
+# the REST API hides the reason (read the one-line error on the Actions UI run
+# page). The block is mandatory here, not merely least-privilege hygiene.
+#
 # Consume from another repo (SHA-pinned + Dependabot — see README). The caller
 # grants the SUPERSET of the per-job permissions below:
 #

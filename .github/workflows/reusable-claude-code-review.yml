@@ -6,8 +6,23 @@ name: Reusable / Claude Code Review
 # on workflow_call). See the caller stub in this repo's `claude-code-review.yml`
 # and the README for the consumer snippet.
 #
+# REQUIRED CALLER PERMISSIONS (A-621): a called reusable workflow's job cannot be
+# granted more than the caller's GITHUB_TOKEN holds. Under the org default
+# `default_workflow_permissions: read`, a caller with no `permissions:` block
+# hands this workflow a read-only token, the `claude-review` job below can't get
+# the `pull-requests: write` / `id-token: write` it needs, and the run dies at
+# compile time with a `startup_failure` — no jobs, no logs, and the REST API hides
+# the reason (read the one-line error on the Actions UI run page). This is the
+# most common cause of "Claude review never posts" across consumers. So the caller
+# MUST declare every scope this job needs.
+#
 # Consume from another repo (SHA-pinned + Dependabot — see README):
 #
+#   permissions:
+#     contents: read
+#     pull-requests: write # Post the review comment
+#     issues: read
+#     id-token: write # OIDC token exchange (getOidcToken) — required, not optional
 #   jobs:
 #     claude-review:
 #       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@<sha>

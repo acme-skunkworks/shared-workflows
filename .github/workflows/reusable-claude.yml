@@ -6,8 +6,23 @@ name: Reusable / Claude Code
 # payload is still available to this workflow via the `github` context, so the
 # author-association gate below evaluates exactly as it does inline.
 #
+# REQUIRED CALLER PERMISSIONS (A-621): a called reusable workflow's job cannot be
+# granted more than the caller's GITHUB_TOKEN holds. Under the org default
+# `default_workflow_permissions: read`, a caller with no `permissions:` block
+# hands this workflow a read-only token, the `claude` job below can't get the
+# `id-token: write` / `actions: read` (etc.) it needs, and the run dies at compile
+# time with a `startup_failure` — no jobs, no logs, and the REST API hides the
+# reason (read the one-line error on the Actions UI run page). So the caller MUST
+# declare every scope this job needs.
+#
 # Consume from another repo (SHA-pinned + Dependabot — see README):
 #
+#   permissions:
+#     contents: read
+#     pull-requests: read
+#     issues: read
+#     id-token: write # OIDC token exchange (getOidcToken) — required, not optional
+#     actions: read # Claude reads CI results on PRs
 #   jobs:
 #     claude:
 #       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@<sha>
