@@ -31,6 +31,38 @@ Reference a workflow from any repo by its path, **pinned to a commit SHA**, and
 let Dependabot keep the SHA current (see [Versioning](#versioning)). Triggers
 live in your caller; the reusable workflow holds the job.
 
+### Required caller permissions
+
+A called reusable workflow's job **cannot be granted more than the caller's
+`GITHUB_TOKEN` holds**. The estate default is `default_workflow_permissions:
+read`, so a caller that declares **no** top-level `permissions:` block hands the
+reusable a read-only token — the reusable's job then requests scopes it can't be
+granted and the run dies at compile time with a **`startup_failure`**: no jobs,
+no logs, and the REST API does not expose the reason (`gh run view` only offers a
+generic "workflow file issue" hint; annotations 404). **Read the one-line error
+on the Actions UI run page.** This is the single most common adoption trap
+(A-621) — and the usual reason a consumer's Claude review 'never posts'.
+
+So every caller stub below declares the top-level `permissions:` block its
+reusable needs (a job-level block on the calling job — as the
+`reusable-pkg-release.yml` header shows — works identically). Copy the whole
+stub, not just the `uses:` line. Note that a `permissions:` block resets every
+scope you _don't_ list to `none`, so it must name **every** scope the reusable's
+job requests:
+
+| Reusable workflow                 | Required caller `permissions:`                                                                  |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `reusable-validate-pr-title.yml`  | `pull-requests: read`                                                                           |
+| `reusable-lint.yml`               | `contents: read`                                                                                |
+| `reusable-build-test.yml`         | `contents: read`                                                                                |
+| `reusable-claude.yml`             | `contents: read`, `pull-requests: read`, `issues: read`, `id-token: write`, `actions: read`     |
+| `reusable-claude-code-review.yml` | `contents: read`, `pull-requests: write`, `issues: read`, `id-token: write`                     |
+| `reusable-pkg-release.yml`        | `contents: write`, `id-token: write`, `issues: write`, `packages: write`, `attestations: write` |
+
+`id-token: write` is **required**, not optional, on both Claude workflows —
+claude-code-action exchanges an OIDC token for its short-lived GitHub token, so
+dropping it fails the run outright.
+
 ### `reusable-claude.yml`
 
 ```yaml
@@ -46,6 +78,15 @@ on:
     types: [opened, assigned]
   pull_request_review:
     types: [submitted]
+
+# Required — see "Required caller permissions" above. Omit this and the run
+# fails at startup (startup_failure) under default_workflow_permissions: read.
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  id-token: write
+  actions: read
 
 jobs:
   claude:
@@ -72,6 +113,14 @@ on:
       - ".github/workflows/claude.yml"
       - ".github/workflows/claude-code-review.yml"
 
+# Required — see "Required caller permissions" above. Omit this and the review
+# never posts: the run fails at startup (startup_failure) under default_workflow_permissions: read.
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+  id-token: write
+
 jobs:
   claude-review:
     uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@<sha> # v1.0.0
@@ -92,8 +141,11 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened] # `edited` re-runs on title fixes
 
+# Required — see "Required caller permissions" above. The check reads the PR
+# title, so it needs pull-requests:read (NOT contents:read); the wrong scope
+# fails the run at startup (startup_failure) under default_workflow_permissions: read.
 permissions:
-  contents: read
+  pull-requests: read
 
 jobs:
   pr-title: # ← keep this job id stable across the estate (see below)
