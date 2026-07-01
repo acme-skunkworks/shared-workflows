@@ -44,9 +44,11 @@ on the Actions UI run page.** This is the single most common adoption trap
 (A-621) — and the usual reason a consumer's Claude review "never posts".
 
 So every caller stub below declares the top-level `permissions:` block its
-reusable needs. Copy the whole stub, not just the `uses:` line. Note that a
-`permissions:` block resets every scope you _don't_ list to `none`, so it must
-name **every** scope the reusable's job requests:
+reusable needs (a job-level block on the calling job — as the
+`reusable-pkg-release.yml` header shows — works identically). Copy the whole
+stub, not just the `uses:` line. Note that a `permissions:` block resets every
+scope you _don't_ list to `none`, so it must name **every** scope the reusable's
+job requests:
 
 | Reusable workflow                 | Required caller `permissions:`                                                                  |
 | --------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -78,7 +80,7 @@ on:
     types: [submitted]
 
 # Required — see "Required caller permissions" above. Omit this and the run
-# startup_failures under default_workflow_permissions: read.
+# fails at startup (startup_failure) under default_workflow_permissions: read.
 permissions:
   contents: read
   pull-requests: read
@@ -112,7 +114,7 @@ on:
       - ".github/workflows/claude-code-review.yml"
 
 # Required — see "Required caller permissions" above. Omit this and the review
-# never posts: the run startup_failures under default_workflow_permissions: read.
+# never posts: the run fails at startup (startup_failure) under default_workflow_permissions: read.
 permissions:
   contents: read
   pull-requests: write
@@ -141,7 +143,7 @@ on:
 
 # Required — see "Required caller permissions" above. The check reads the PR
 # title, so it needs pull-requests:read (NOT contents:read); the wrong scope
-# startup_failures under default_workflow_permissions: read.
+# fails the run at startup (startup_failure) under default_workflow_permissions: read.
 permissions:
   pull-requests: read
 
