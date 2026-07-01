@@ -91,6 +91,25 @@ jobs:
           bash <(curl -fsSL "$url") "$ACTIONLINT_VERSION"
           ./actionlint -color
 
+      - name: 🚦 Guard — no top-level concurrency in reusables
+        # A-621: a reusable (`workflow_call`) runs as the CALLER's job, so a
+        # workflow-level `concurrency:` inside a reusable resolves to the same
+        # group the caller declares and GitHub deadlock-cancels the run at
+        # startup ("a deadlock was detected for concurrency group ... between a
+        # top level workflow and '<job>'"). It is invisible to actionlint
+        # (runtime concurrency-graph check) and to the REST API — which is why it
+        # once slipped through to a human noticing. Concurrency belongs in the
+        # caller stub, where the trigger lives; this guard fails if any
+        # `reusable-*.yml` reintroduces a top-level (column-0) `concurrency:` key
+        # (a job-level `concurrency:` is indented and correctly ignored).
+        run: |
+          set -euo pipefail
+          if grep -lE '^concurrency:' .github/workflows/reusable-*.yml; then
+            echo "::error::Reusable workflow(s) above declare a top-level 'concurrency:' — move it to the caller stub; it deadlock-cancels every caller at startup (A-621)."
+            exit 1
+          fi
+          echo "OK — no reusable-*.yml declares a top-level concurrency."
+
   markdown:
     name: 📝 Markdown
     runs-on: ubuntu-latest

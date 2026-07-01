@@ -51,9 +51,15 @@ on:
         description: OAuth token for claude-code-action.
         required: true
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+# NB: NO top-level `concurrency:` here. A called reusable workflow runs as the
+# caller's job, so a workflow-level concurrency group in this reusable resolves
+# to the SAME value as the identical group the caller sets in its own top-level
+# `concurrency:` — GitHub then detects the workflow deadlocking against its own
+# called job and cancels the run at startup ("a deadlock was detected for
+# concurrency group '<workflow>-<pr#>' between a top level workflow and
+# 'claude-review'"). That broke the review for every caller (A-621). Concurrency
+# belongs in the CALLER, where the `pull_request` trigger lives; the caller stub
+# already declares it, so this reusable must not.
 
 jobs:
   claude-review:

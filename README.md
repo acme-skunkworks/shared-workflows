@@ -113,6 +113,13 @@ on:
       - ".github/workflows/claude.yml"
       - ".github/workflows/claude-code-review.yml"
 
+# Concurrency lives HERE (the caller), not in the reusable: a reusable runs as
+# this job, so a top-level `concurrency:` inside the reusable resolves to the
+# same group and deadlock-cancels the run (A-621). This reusable declares none.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 # Required — see "Required caller permissions" above. Omit this and the review
 # never posts: the run fails at startup (startup_failure) under default_workflow_permissions: read.
 permissions:
