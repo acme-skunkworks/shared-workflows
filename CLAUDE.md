@@ -127,6 +127,11 @@ carries some unique rules:
   hand-rolled (they need `setup-node`'s `registry-url`/`scope`) and pin
   `pnpm/action-setup` + `setup-node` to the **same SHAs** `setup-project` uses, so
   the toolchain cannot drift between the build and the publish.
+- **`build: false` for build-less packages.** The verification build is gated on a
+  `build` input (default `true`, mirroring `reusable-build-test.yml`). A config-only
+  or bundle-only consumer with no `build` script (markdownlint-config, agent-skills)
+  passes `build: false` — else the build step fails `ERR_PNPM_NO_SCRIPT`. `npm pack`
+  still packs the tarball from the package sources regardless.
 
 ## Composite actions (Layer 1)
 
