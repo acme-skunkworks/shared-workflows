@@ -294,6 +294,13 @@ the expensive axis and splitting at the _action_ layer is the cheap one. Therefo
      required check-run_ or for parallelism worth the extra setup — the exception, not the default.
 - **The gate is granularity-agnostic.** The `GO/NO GO` aggregator just `needs:` whatever jobs the
   repo wired — one coarse job or six fine ones — so the gate never forces the choice (§5.4).
+- **But opting out of _every_ lane is a misconfiguration, not a choice.** A coarse bundle with all
+  its boolean lanes `false` would check out, run nothing and report success — a silent green the
+  aggregator counts as a real verification. So each bundle (`reusable-lint.yml`,
+  `reusable-build-test.yml`) opens with a `🚫 Validate lane selection` guard that hard-fails before
+  checkout when no lane is enabled (A-445). This nudges a "you must run _something_" policy up into
+  the shared layer — a deliberate, narrow exception to the otherwise per-repo opt-out model above; it
+  catches only the all-false case, not the subtler "the lanes that matter here are off".
 
 Net: maximum composability where it's free (actions/steps), minimum setup tax where it's expensive
 (jobs/workflows), and a clean ladder from "call the bundle" → "tweak an input" → "assemble from
