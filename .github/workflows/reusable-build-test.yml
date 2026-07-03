@@ -168,7 +168,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${ANY_LANE_ENABLED}" != 'true' ]; then
-            echo "::error::At least one build-test lane (build/typecheck/test/shellcheck/bats) must be enabled." >&2
+            echo "::error::At least one build-test lane (build/typecheck/test/shellcheck/bats) must be enabled."
             exit 1
           fi
           echo 'OK — at least one build-test lane is enabled.'

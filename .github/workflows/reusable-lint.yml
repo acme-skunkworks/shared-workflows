@@ -157,7 +157,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${ANY_LANE_ENABLED}" != 'true' ]; then
-            echo "::error::At least one lint lane (eslint/markdown/yaml/changelog) must be enabled." >&2
+            echo "::error::At least one lint lane (eslint/markdown/yaml/changelog) must be enabled."
             exit 1
           fi
           echo 'OK — at least one lint lane is enabled.'
