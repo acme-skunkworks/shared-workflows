@@ -1,11 +1,20 @@
 ---
-title: "Adopt changelog skill 0.9.0 and wire changelog:enrich"
+title: Adopt changelog skill 0.9.0 and wire changelog:enrich
 release_note:
-created_at: "2026-07-03T17:57:18Z"
+created_at: '2026-07-03T17:57:18Z'
 branch: a-675-adopt-changelog-0-9-0-enrich
 category: chore
 breaking: false
-issues: ["A-675"]
+issues:
+  - A-675
+merged_at: '2026-07-03T18:02:38Z'
+commit: 8a27017
+merge_strategy: squash
+pr: 40
+stats:
+  loc_added: 602
+  loc_removed: 97
+  files_changed: 13
 ---
 
 ## Changed
