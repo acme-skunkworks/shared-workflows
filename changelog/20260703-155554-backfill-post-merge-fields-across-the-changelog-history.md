@@ -1,11 +1,20 @@
 ---
-title: "Backfill post-merge fields across the changelog history"
+title: Backfill post-merge fields across the changelog history
 release_note:
-created_at: "2026-07-03T15:55:54Z"
+created_at: '2026-07-03T15:55:54Z'
 branch: changelog-backfill-post-merge-fields
 category: docs
 breaking: false
-issues: ["A-597"]
+issues:
+  - A-597
+merged_at: '2026-07-03T16:15:57Z'
+commit: 44b089b
+merge_strategy: squash
+pr: 37
+stats:
+  loc_added: 157
+  loc_removed: 0
+  files_changed: 15
 ---
 
 ## Changed
