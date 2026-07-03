@@ -63,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-            echo "::error::CLAUDE_CODE_OAUTH_TOKEN is empty. Define it as a repository Actions secret in the consuming repo (it is NOT ANTHROPIC_API_KEY, and there is no org-level secret) and pass 'secrets: inherit' from the caller (A-646)."
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN is empty. Define it as a repository Actions secret in this repo (it is NOT ANTHROPIC_API_KEY, and there is no org-level secret) (A-646)."
             exit 1
           fi
           echo "OK — CLAUDE_CODE_OAUTH_TOKEN is present."
