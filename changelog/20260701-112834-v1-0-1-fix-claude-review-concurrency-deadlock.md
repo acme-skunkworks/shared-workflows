@@ -6,6 +6,16 @@ created_at: "2026-07-01T11:28:34Z"
 category: fix
 breaking: false
 issues: ["A-621"]
+branch: a-621-fix-reusable-claude-review-concurrency-deadlock
+merged_at: "2026-07-01T11:28:35Z"
+commit: ff71514
+merge_strategy: squash
+pr: 21
+stats:
+  loc_added: 44
+  loc_removed: 3
+  files_changed: 4
+  commits: 3
 ---
 
 ## Fixed

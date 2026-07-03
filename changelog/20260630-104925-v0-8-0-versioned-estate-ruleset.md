@@ -6,6 +6,16 @@ created_at: "2026-06-30T10:49:25Z"
 category: feature
 breaking: false
 issues: ["A-425"]
+branch: a-425-define-version-estate-rulesets-in-shared-workflows
+merged_at: "2026-06-30T10:49:25Z"
+commit: 7f543be
+merge_strategy: squash
+pr: 17
+stats:
+  loc_added: 165
+  loc_removed: 0
+  files_changed: 2
+  commits: 4
 ---
 
 ## Added

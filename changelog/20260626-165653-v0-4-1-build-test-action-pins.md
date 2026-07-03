@@ -6,6 +6,16 @@ created_at: "2026-06-26T16:56:53Z"
 category: fix
 breaking: false
 issues: ["A-444"]
+branch: sk-444-bump-reusable-build-testyml-action-pins-to-the-sk-416-merge
+merged_at: "2026-06-26T16:56:53Z"
+commit: 9b7e7dc
+merge_strategy: squash
+pr: 8
+stats:
+  loc_added: 6
+  loc_removed: 6
+  files_changed: 1
+  commits: 1
 ---
 
 ## Fixed

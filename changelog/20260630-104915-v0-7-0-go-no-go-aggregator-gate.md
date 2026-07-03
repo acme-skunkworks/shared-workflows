@@ -6,6 +6,16 @@ created_at: "2026-06-30T10:49:15Z"
 category: feature
 breaking: false
 issues: ["A-418"]
+branch: a-418-define-gono-go-aggregator-pattern-integration-pinned-ruleset
+merged_at: "2026-06-30T10:49:15Z"
+commit: 79b6e52
+merge_strategy: squash
+pr: 16
+stats:
+  loc_added: 109
+  loc_removed: 0
+  files_changed: 3
+  commits: 3
 ---
 
 ## Added

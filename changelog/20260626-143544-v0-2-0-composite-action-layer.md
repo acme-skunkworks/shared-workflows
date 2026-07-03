@@ -6,6 +6,16 @@ created_at: "2026-06-26T14:35:44Z"
 category: feature
 breaking: false
 issues: ["A-440"]
+branch: sk-440-author-the-shared-composite-action-layer-setup-project
+merged_at: "2026-06-26T14:35:44Z"
+commit: 132d746
+merge_strategy: squash
+pr: 5
+stats:
+  loc_added: 507
+  loc_removed: 5
+  files_changed: 13
+  commits: 4
 ---
 
 ## Added
