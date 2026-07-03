@@ -10,32 +10,34 @@ GitHub release** over the reusable workflows and composite actions, nothing more
 Each entry carries a `version` tying it to the tag it shipped in, and the GitHub
 release notes are sourced from the matching entry's body.
 
-**Move the floating `v1` tag on every release.** Consumers pin their callers to
-`@v1` (A-662), so after tagging a new `vX.Y.Z` and cutting its GitHub release,
-force-move `v1` onto the same commit and push it, or the release never reaches
-`@v1` consumers:
-
-```bash
-git tag -f v1 <release-commit>
-git push -f origin v1
-```
+**Releases are automated (A-597).** On merge to `main`,
+[`release-please.yml`](../.github/workflows/release-please.yml) maintains a
+release PR from the Conventional-Commit history; merging it bumps
+[`package.json`](../package.json) + [`.release-please-manifest.json`](../.release-please-manifest.json)
+and cuts the annotated `vX.Y.Z` tag and its GitHub Release. Consumers pin their
+callers to `@v1` (A-662), so
+[`move-floating-major.yml`](../.github/workflows/move-floating-major.yml) then
+force-moves the floating major tag onto the release commit — otherwise the
+release would never reach `@v1` consumers.
 
 `v1` is a **lightweight** tag: on a perpetually-moving ref an annotated tag's
 embedded tagger/timestamp/message only reflect the last force-move, not a release,
 so they mislead. The permanent `vX.Y.Z` tags stay annotated — that is where the
 release audit trail lives.
 
-A breaking change ships as `v2` (a new floating major) and must **not** move `v1`.
-This step is manual until A-597 automates the release flow.
+A breaking change ships as `v2` (a new floating major) and must **not** move `v1`;
+`move-floating-major.yml` handles this — it only ever touches the release's own
+major tag.
 
-Also **bump the "current release" pointer and full-history range in
-[`README.md`](../README.md)'s Versioning section** to the new `vX.Y.Z` — the
-routinely-forgotten step that leaves the docs pointing at an old release.
+> **Phase B (A-597):** release-please will be driven by the private
+> release-orchestrator (shared-workflows joins as a `kind: deploy` target, like
+> octavo), which also enriches these entries post-merge with the `merged_at` /
+> `commit` / `stats` fields. Until that cutover, the in-repo `release-please.yml`
+> above drives releases.
 
 The entries up to and including `v1.0.0` were **hand-authored as a backfill**
-(A-585), reconstructing the project's history from its merged PRs — there was no
-`/send-it`/changelog tooling in this repo when the work landed. New entries, if
-the repo later adopts a forward flow, would follow the same schema.
+(A-585), reconstructing the project's history from its merged PRs. Forward entries
+follow the same schema.
 
 ## File naming
 

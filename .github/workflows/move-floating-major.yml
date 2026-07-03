@@ -1,0 +1,87 @@
+name: Move floating major tag
+
+# On every published release, force-move the floating major tag (`v1`, `v2`, …)
+# onto the release commit. Consumers pin their reusable-workflow callers to the
+# floating major (`@v1`, A-662), so a release only reaches them once that tag
+# moves. Neither release-please nor the orchestrator's `release-please
+# github-release` does this — it is shared-workflows-specific (octavo, the model
+# `kind: deploy` target, has no floating-tag consumers), so it lives here.
+#
+# Phase-independent (A-597): it fires on the `release` event regardless of who
+# cut the release — the interim in-repo release-please.yml (Phase A) or the
+# release-orchestrator (Phase B).
+#
+# The floating major is a LIGHTWEIGHT tag by design (changelog/README.md): on a
+# perpetually-moving ref an annotated tag's embedded tagger/message would only
+# reflect the last force-move, not a release. Creating/moving it via the git-refs
+# API (below) yields exactly a lightweight ref. The permanent `vX.Y.Z` tags stay
+# annotated — that is where the release audit trail lives.
+#
+# Phase note (A-597): a GITHUB_TOKEN-created release does NOT fire `on: release`
+# (GitHub's recursion guard), so in Phase A this workflow does not run — the
+# interim release-please.yml moves the floating major inline from the action's
+# outputs instead. In Phase B the orchestrator publishes the Release under its
+# road-runner-bot App token, and App-token events DO fire this trigger, so this
+# workflow takes over. (Worth confirming live on the first orchestrated release.)
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  move-floating-major:
+    name: 🏷️ Move floating major
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏷️ Force-move vMAJOR onto the release commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          set -euo pipefail
+
+          # Skip pre-releases — the floating major must track stable releases only.
+          if [ "$PRERELEASE" = "true" ]; then
+            echo "Release $TAG is a pre-release — leaving the floating major untouched."
+            exit 0
+          fi
+
+          # Only act on a strict vX.Y.Z tag; anything else (odd manual tags) is a no-op.
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Tag $TAG is not a vX.Y.Z release tag — nothing to do."
+            exit 0
+          fi
+
+          major="${TAG%%.*}"   # v1.2.0 -> v1 ; v2.0.0 -> v2
+          echo "Release $TAG → floating major $major"
+
+          # Resolve the release tag to its commit SHA (deref if annotated).
+          ref="$(gh api "repos/$REPO/git/refs/tags/$TAG")"
+          sha="$(printf '%s' "$ref" | jq -r '.object.sha')"
+          type="$(printf '%s' "$ref" | jq -r '.object.type')"
+          if [ "$type" = "tag" ]; then
+            sha="$(gh api "repos/$REPO/git/tags/$sha" --jq '.object.sha')"
+          fi
+          echo "$TAG points at $sha"
+
+          # Force-move the lightweight major ref onto the release commit, creating
+          # it if it doesn't exist yet (a brand-new major — e.g. the first v2
+          # release — which must NOT touch v1: we only ever act on "$major").
+          # Branch on whether the ref exists rather than trying PATCH and falling
+          # back to POST on any error: that fallback masks a PATCH failure with an
+          # unrelated cause (rate-limit, permissions) behind a confusing POST 422.
+          # Here a genuine PATCH/POST failure aborts loudly under `set -e`.
+          if gh api "repos/$REPO/git/refs/tags/$major" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$REPO/git/refs/tags/$major" \
+              -f sha="$sha" -F force=true >/dev/null
+            echo "Moved $major → $sha."
+          else
+            gh api -X POST "repos/$REPO/git/refs" \
+              -f ref="refs/tags/$major" -f sha="$sha" >/dev/null
+            echo "Created $major → $sha."
+          fi
