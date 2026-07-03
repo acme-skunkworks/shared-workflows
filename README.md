@@ -110,6 +110,8 @@ permissions:
 jobs:
   claude:
     uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@v1
+    # Requires CLAUDE_CODE_OAUTH_TOKEN in THIS repo's Actions secrets — NOT
+    # ANTHROPIC_API_KEY (an empty ANTHROPIC_API_KEY in the log is a red herring).
     secrets: inherit
 ```
 
@@ -150,6 +152,8 @@ permissions:
 jobs:
   claude-review:
     uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@v1
+    # Requires CLAUDE_CODE_OAUTH_TOKEN in THIS repo's Actions secrets — NOT
+    # ANTHROPIC_API_KEY (an empty ANTHROPIC_API_KEY in the log is a red herring).
     secrets: inherit
 ```
 
@@ -226,8 +230,8 @@ updates:
 ```
 
 Releases here are tagged (`vX.Y.Z`), and the floating **`v1`** tag tracks the
-latest `v1.x`. The current release is **`v1.0.3`** — the full history
-(`v0.1.0`–`v1.0.3`) is in [`changelog/`](changelog/), and each tag has a matching
+latest `v1.x`. The current release is **`v1.1.0`** — the full history
+(`v0.1.0`–`v1.1.0`) is in [`changelog/`](changelog/), and each tag has a matching
 GitHub release. Prefer `@v1`; if you need to pin an exact commit, use the SHA a
 specific `vX.Y.Z` tag points at.
 
