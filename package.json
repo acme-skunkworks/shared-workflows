@@ -23,6 +23,7 @@
   },
   "type": "module",
   "scripts": {
+    "changelog:enrich": "node .claude/skills/changelog/scripts/enrich-changelog.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"!**/node_modules/**\"",
