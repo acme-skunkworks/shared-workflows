@@ -16,7 +16,7 @@ name: Reusable / Claude Code Review
 # most common cause of 'Claude review never posts' across consumers. So the caller
 # MUST declare every scope this job needs.
 #
-# Consume from another repo (SHA-pinned + Dependabot — see README):
+# Consume from another repo (floating major tag `@v1` — see README):
 #
 #   permissions:
 #     contents: read
@@ -25,7 +25,7 @@ name: Reusable / Claude Code Review
 #     id-token: write # OIDC token exchange (getOidcToken) — required, not optional
 #   jobs:
 #     claude-review:
-#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@<sha>
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@v1
 #       secrets: inherit
 
 on:

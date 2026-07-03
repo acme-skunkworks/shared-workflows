@@ -15,7 +15,7 @@ name: Reusable / Claude Code
 # reason (read the one-line error on the Actions UI run page). So the caller MUST
 # declare every scope this job needs.
 #
-# Consume from another repo (SHA-pinned + Dependabot — see README):
+# Consume from another repo (floating major tag `@v1` — see README):
 #
 #   permissions:
 #     contents: read
@@ -25,7 +25,7 @@ name: Reusable / Claude Code
 #     actions: read # Claude reads CI results on PRs
 #   jobs:
 #     claude:
-#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@<sha>
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@v1
 #       secrets: inherit
 
 on:

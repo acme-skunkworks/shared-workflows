@@ -25,13 +25,13 @@ name: Reusable / Validate PR title
 # view` only offers a generic hint; read the one-line error on the Actions UI run
 # page). So the caller MUST declare the scope this job needs.
 #
-# Consume from another repo (SHA-pinned + Dependabot — see README):
+# Consume from another repo (floating major tag `@v1` — see README):
 #
 #   permissions:
 #     pull-requests: read
 #   jobs:
 #     pr-title:
-#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@<sha>
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@v1
 
 on:
   workflow_call:
