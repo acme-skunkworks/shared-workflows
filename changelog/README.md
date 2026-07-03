@@ -52,22 +52,44 @@ changelog/YYYYMMDD-HHMMSS-<slug>.md
 
 ## Frontmatter schema
 
+Entries are authored by the installed [`changelog`](../.claude/skills/changelog/)
+skill and validated by its `validate-changelog.mjs`. The authoritative contract
+is [`changelog-contract.md`](../.claude/skills/changelog/references/changelog-contract.md);
+the schema below is the local summary.
+
 ```yaml
 ---
-title: "Concise summary of the release"
+title: "Concise summary of the change"
 release_note: "One-sentence user-facing summary" # optional; string or null
-version: "0.7.0" # semver; the tag this entry shipped in
 created_at: "2026-06-30T10:49:15Z" # set once; never overwritten
+merged_at: # post-merge; filled by the release orchestrator
+branch: "a-597-feature-slug" # stable lookup key for enrichment
+pr: # filled at /send-it time once the PR exists
+commit: # 7-char merge SHA; post-merge
+merge_strategy: # squash | merge | rebase; post-merge
+version: # vX.Y.Z (no v) the release cut; blank on non-releasing entries
+author: "you@example.com"
+co_authors: []
 category: feature # feature | fix | chore | docs | refactor | perf
 breaking: false
 issues: ["A-418"] # Linear issue IDs
+affected_packages: [] # this repo ships no packages — stays empty
+stats: # post-merge; filled by enrichment
+  files_changed:
+  loc_added:
+  loc_removed:
+  commits:
 ---
 ```
 
 ### Required fields
 
 `title`, `created_at`, `category`, `breaking`. Everything else is optional
-(validated by type when present). `version` is present on every released entry.
+(validated by type when present). Forward entries carry the richer fields above;
+the **post-merge** fields (`merged_at` / `commit` / `merge_strategy` / `stats`,
+and `version` on releasing entries) are left blank at authoring time and filled
+later. The hand-authored backfill entries (up to `v1.0.0`) use the original
+slimmer schema and stay valid under the lenient required set.
 
 > **Note on timestamps:** wrap ISO 8601 timestamps in quotes
 > (`"2026-06-30T10:49:15Z"`). Unquoted timestamps are auto-parsed by YAML into

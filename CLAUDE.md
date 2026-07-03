@@ -260,9 +260,13 @@ issue keys). The installed skills are:
 - **`/triage-pr`** — drive a draft PR with failing CI to merge-ready: fix in-scope CI
   failures, then action unresolved AI review feedback.
 
-This repo has **no changelog flow**, so `send-it` skips changelog authoring
-(`changelog: false` in its `config.json`) and the `changelog` skill is intentionally
-**not** installed.
+This repo runs the shared **`changelog`** flow (A-597): the `changelog` skill is
+installed, `send-it` authors a dated `changelog/` entry per branch
+(`changelog: true` in its `config.json`), and CI validates entries against the
+contract via the `📓 Changelog` job in the `GO/NO GO` aggregator. Post-merge
+enrichment (filling `merged_at` / `commit` / `stats`) is **not yet wired** — that
+is the estate-wide deploy-target enrichment build (A-597 Layer B); until it lands
+those fields stay blank, exactly as on octavo today.
 
 ## Linting and formatting
 

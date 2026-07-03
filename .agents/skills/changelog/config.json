@@ -1,0 +1,11 @@
+{
+  "issueKeys": [
+    "A"
+  ],
+  "linearWorkspaceSlug": "acme-skunkworks",
+  "baseBranch": "main",
+  "changelogDir": "changelog",
+  "packageRoots": [],
+  "fallbackPackage": "shared-workflows",
+  "affectedPackages": false
+}

@@ -29,7 +29,8 @@
     "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"!**/node_modules/**\"",
     "lint:workflows": "actionlint",
     "lint:yaml": "yamllint .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "validate:changelog": "node .claude/skills/changelog/scripts/validate-changelog.mjs"
   },
   "lint-staged": {
     "**/*": [
