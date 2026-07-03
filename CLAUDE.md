@@ -180,8 +180,13 @@ these inline copies port the hardened `reusable-claude*.yml` bodies verbatim:
 SHA-pinned actions, the A-313 author-association gate, `persist-credentials:
 false`, timeouts and review concurrency. The `workflow_call` `inputs` become
 literals and the review's `paths-ignore` (invalid on `workflow_call`) moves onto
-the real `pull_request` trigger. **Keep these in sync with their `reusable-*`
-counterparts** — same rule as the inline PR-title gate.
+the real `pull_request` trigger. Both also carry the A-646 empty-token guard step
+(a `🚦 Guard` that fails fast when `CLAUDE_CODE_OAUTH_TOKEN` is empty — the
+required secret is that token, **not** `ANTHROPIC_API_KEY`), and the review copy
+carries the A-646 `github.actor != 'dependabot[bot]'` skip (a Dependabot run can't
+read Actions secrets, so it would authenticate with an empty token). **Keep these
+in sync with their `reusable-*` counterparts** — same rule as the inline PR-title
+gate.
 
 ### Status-check context (A-400 / A-405)
 

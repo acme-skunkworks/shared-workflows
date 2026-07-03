@@ -59,6 +59,24 @@ jobs:
           # leave GITHUB_TOKEN in .git/config (artipacked credential exposure).
           persist-credentials: false
 
+      - name: 🚦 Guard — CLAUDE_CODE_OAUTH_TOKEN is set
+        # A-646: `required: true` on a workflow_call secret only forces the caller
+        # to MAP the secret (e.g. `secrets: inherit`) — it does NOT guarantee a
+        # non-empty VALUE. A consumer inheriting from a repo where the secret is
+        # unset passes an empty string that satisfies the schema, then
+        # claude-code-action dies deep in its OIDC/token exchange with an opaque
+        # error and nothing happens. Fail fast here with a clear message. `secrets`
+        # isn't available in a step `if:`, so map it into `env:` and test the shell.
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN is empty. Define it as a repository Actions secret in this repo (it is NOT ANTHROPIC_API_KEY, and there is no org-level secret) (A-646)."
+            exit 1
+          fi
+          echo "OK — CLAUDE_CODE_OAUTH_TOKEN is present."
+
       - name: Run Claude Code
         id: claude
         # If startup crashes with an AJV schema error, see anthropics/claude-code-action#947

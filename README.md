@@ -63,6 +63,24 @@ job requests:
 claude-code-action exchanges an OIDC token for its short-lived GitHub token, so
 dropping it fails the run outright.
 
+### Required secret: `CLAUDE_CODE_OAUTH_TOKEN`
+
+The two Claude workflows authenticate via **one** secret,
+`CLAUDE_CODE_OAUTH_TOKEN`. It is **not** `ANTHROPIC_API_KEY` — claude-code-action
+prints an empty `ANTHROPIC_API_KEY` as an unused alt-auth input, which is a red
+herring, not the cause of a failed run (A-646).
+
+- **There is no org-level secret.** Each consuming repo defines its **own
+  repository Actions secret** named `CLAUDE_CODE_OAUTH_TOKEN`; the caller stub
+  hands it to the reusable via `secrets: inherit`.
+- **Missing / empty on a normal run** now **fails fast** with a clear guard step
+  error, instead of an opaque failure deep inside claude-code-action's OIDC
+  exchange with no review posted.
+- **Dependabot PRs are skipped by design.** A Dependabot-triggered run reads the
+  Dependabot secret store, not Actions secrets, so the token is empty there — the
+  review job skips (neutral) rather than failing. This is expected, not a
+  misconfigured secret.
+
 ### `reusable-claude.yml`
 
 ```yaml
@@ -135,8 +153,8 @@ jobs:
 ```
 
 Inputs: `timeout_minutes` (default `30`), `track_progress` (default `true`),
-`use_sticky_comment` (default `true`). Draft PRs and `release-please--*` branches
-are skipped automatically.
+`use_sticky_comment` (default `true`). Draft PRs, `release-please--*` branches and
+Dependabot PRs are skipped automatically (see [Required secret](#required-secret-claude_code_oauth_token)).
 
 ### `reusable-validate-pr-title.yml`
 
