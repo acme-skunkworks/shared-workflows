@@ -226,8 +226,8 @@ updates:
 ```
 
 Releases here are tagged (`vX.Y.Z`), and the floating **`v1`** tag tracks the
-latest `v1.x`. The current release is **`v1.0.2`** — the full history
-(`v0.1.0`–`v1.0.2`) is in [`changelog/`](changelog/), and each tag has a matching
+latest `v1.x`. The current release is **`v1.0.3`** — the full history
+(`v0.1.0`–`v1.0.3`) is in [`changelog/`](changelog/), and each tag has a matching
 GitHub release. Prefer `@v1`; if you need to pin an exact commit, use the SHA a
 specific `vX.Y.Z` tag points at.
 

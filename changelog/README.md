@@ -23,6 +23,10 @@ git push -f origin v1
 A breaking change ships as `v2` (a new floating major) and must **not** move `v1`.
 This step is manual until A-597 automates the release flow.
 
+Also **bump the "current release" pointer and full-history range in
+[`README.md`](../README.md)'s Versioning section** to the new `vX.Y.Z` — the
+routinely-forgotten step that leaves the docs pointing at an old release.
+
 The entries up to and including `v1.0.0` were **hand-authored as a backfill**
 (A-585), reconstructing the project's history from its merged PRs — there was no
 `/send-it`/changelog tooling in this repo when the work landed. New entries, if
