@@ -310,9 +310,10 @@ not less. CodeRabbit reads this file from the PR's **base branch**, so a change 
 it only takes effect once merged to `main`.
 
 The label is repo-local (create it with `gh label create skip-review --color
-ededed --description '…'` before it can be applied). Fanning the config + label
-out across the estate — and having re-sync PRs opened with `--label skip-review` —
-belongs to the private `release-orchestrator` (it already holds the cross-repo
-`road-runner-bot` credential), **not** this repo, which has no cross-repo write
-capability by design. Agent-facing guidance to apply the label lives in
-`AGENTS.md` (A-668).
+ededed --description 'Fanned-out rollout PR — CodeRabbit skips it'` before it can
+be applied). Fanning the config + label out across the estate — and having
+re-sync PRs opened with `--label skip-review` — belongs to the private
+`release-orchestrator` (it already holds the cross-repo `road-runner-bot`
+credential), **not** this repo, which has no cross-repo write capability by
+design. Agent-facing guidance for agents to apply the label will live in the
+estate's shared `AGENTS.md` once A-668 ships.
