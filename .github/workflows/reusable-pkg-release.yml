@@ -209,7 +209,7 @@ jobs:
           persist-credentials: false # Nothing git-pushes; avoid artipacked exposure.
 
       - name: 🧰 Set up project
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@9febdb14373f383e3ae4f5a6e3f6bb75a59d0c3d # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
@@ -217,7 +217,7 @@ jobs:
         # Skipped for build-less packages (`build: false`) — the pack step below
         # still produces the tarball from the package sources.
         if: ${{ inputs.build }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/build@d0a5949f6e6a2630f325a14beb9600ad8e0df230 # shared-workflows actions @d0a5949 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@9febdb14373f383e3ae4f5a6e3f6bb75a59d0c3d # shared-workflows actions @d0a5949 (pre-release internal pin)
         with:
           script: ${{ inputs.build-script }}
 
@@ -508,7 +508,7 @@ jobs:
           echo "Publishing tarball: $tarball"
 
       - name: 🔏 Attest build provenance
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: ${{ steps.tb.outputs.path }}
 
