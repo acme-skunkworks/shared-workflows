@@ -17,10 +17,12 @@ name: Move floating major tag
 # API (below) yields exactly a lightweight ref. The permanent `vX.Y.Z` tags stay
 # annotated — that is where the release audit trail lives.
 #
-# Caveat to verify live (A-597): a release created under Phase B's road-runner-bot
-# App token should fire this `on: release` trigger (App-token events do), whereas
-# a GITHUB_TOKEN-created release would not. Phase A uses release-please-action,
-# which publishes the Release such that this fires.
+# Phase note (A-597): a GITHUB_TOKEN-created release does NOT fire `on: release`
+# (GitHub's recursion guard), so in Phase A this workflow does not run — the
+# interim release-please.yml moves the floating major inline from the action's
+# outputs instead. In Phase B the orchestrator publishes the Release under its
+# road-runner-bot App token, and App-token events DO fire this trigger, so this
+# workflow takes over. (Worth confirming live on the first orchestrated release.)
 
 on:
   release:
@@ -67,12 +69,16 @@ jobs:
           fi
           echo "$TAG points at $sha"
 
-          # Force-move the lightweight major ref, creating it if it doesn't exist
-          # yet (a brand-new major, e.g. the first v2 release — which must NOT
-          # touch v1: PATCH targets only "$major", and a new major falls through
-          # to POST).
-          if gh api -X PATCH "repos/$REPO/git/refs/tags/$major" \
-               -f sha="$sha" -F force=true >/dev/null 2>&1; then
+          # Force-move the lightweight major ref onto the release commit, creating
+          # it if it doesn't exist yet (a brand-new major — e.g. the first v2
+          # release — which must NOT touch v1: we only ever act on "$major").
+          # Branch on whether the ref exists rather than trying PATCH and falling
+          # back to POST on any error: that fallback masks a PATCH failure with an
+          # unrelated cause (rate-limit, permissions) behind a confusing POST 422.
+          # Here a genuine PATCH/POST failure aborts loudly under `set -e`.
+          if gh api "repos/$REPO/git/refs/tags/$major" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$REPO/git/refs/tags/$major" \
+              -f sha="$sha" -F force=true >/dev/null
             echo "Moved $major → $sha."
           else
             gh api -X POST "repos/$REPO/git/refs" \

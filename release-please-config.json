@@ -7,6 +7,5 @@
     }
   },
   "include-component-in-tag": false,
-  "tag-separator": "-",
   "separate-pull-requests": false
 }

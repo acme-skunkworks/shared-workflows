@@ -35,6 +35,9 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  # release-please-action creates its `autorelease: *` labels via the issues
+  # labels API on first run; without issues: write that creation fails.
+  issues: write
 
 jobs:
   release-please:
@@ -42,8 +45,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔖 Run release-please
+        id: rp
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Move the floating major HERE in Phase A. release-please creates the tag +
+      # Release with GITHUB_TOKEN, and a GITHUB_TOKEN-created release does NOT fire
+      # `on: release` workflows (GitHub's recursion guard) — so move-floating-major.yml
+      # never runs in Phase A. We do the same idempotent move from the action's
+      # outputs instead. (Phase B deletes this workflow; the orchestrator publishes
+      # the Release under its App token, which DOES fire move-floating-major.yml.)
+      - name: 🏷️ Move floating major
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          MAJOR: ${{ steps.rp.outputs.major }}
+          SHA: ${{ steps.rp.outputs.sha }}
+        run: |
+          set -euo pipefail
+          tag="v${MAJOR}"
+          echo "Release ${{ steps.rp.outputs.tag_name }} → floating major $tag @ $SHA"
+          if gh api "repos/$REPO/git/refs/tags/$tag" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$REPO/git/refs/tags/$tag" \
+              -f sha="$SHA" -F force=true >/dev/null
+            echo "Moved $tag → $SHA."
+          else
+            gh api -X POST "repos/$REPO/git/refs" \
+              -f ref="refs/tags/$tag" -f sha="$SHA" >/dev/null
+            echo "Created $tag → $SHA."
+          fi
