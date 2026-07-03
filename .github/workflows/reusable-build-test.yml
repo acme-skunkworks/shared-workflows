@@ -20,6 +20,11 @@ name: Reusable / Build & Test
 # other inputs are thin pass-throughs to the composite actions, fed in a caller
 # stub from the consumer's `repo-config.yaml`.
 #
+# A caller that disables EVERY lane would otherwise check out, run nothing and
+# exit GREEN — a silent pass the consumer's local `GO/NO GO` aggregator counts
+# as a verification that never happened (A-445). The `🚫 Validate lane
+# selection` guard below fails the run fast, before checkout, instead.
+#
 # SAME-REPO ACTION REFERENCES: a reusable workflow CANNOT reach its sibling
 # actions via a local `./.github/actions/…` path — inside a `workflow_call` job
 # a `./` path resolves against the CALLER's workspace, not this repo (community
@@ -151,6 +156,23 @@ jobs:
     env:
       HUSKY: 0
     steps:
+      - name: 🚫 Validate lane selection
+        # A bundle with every lane disabled runs no checks yet still exits green,
+        # so a consumer's `GO/NO GO` aggregator (`needs: [build-test, …]`) counts
+        # a verification that never happened — a misconfigured caller looks
+        # identical to a passing one (A-445). Fail fast before checkout. `run:`
+        # (not a job `if:`) is deliberate: an `if:` would SKIP the job green,
+        # which is the exact silent pass we are killing.
+        env:
+          ANY_LANE_ENABLED: ${{ inputs.build || inputs.typecheck || inputs.test || inputs.shellcheck || inputs.bats }}
+        run: |
+          set -euo pipefail
+          if [ "${ANY_LANE_ENABLED}" != 'true' ]; then
+            echo "::error::At least one build-test lane (build/typecheck/test/shellcheck/bats) must be enabled." >&2
+            exit 1
+          fi
+          echo 'OK — at least one build-test lane is enabled.'
+
       - name: 🛎️ Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
