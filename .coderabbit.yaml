@@ -1,0 +1,10 @@
+# CodeRabbit configuration.
+#
+# Rollout PRs opt out of CodeRabbit review to spare the fair-usage quota for PRs
+# that bring new functionality (A-667). A `!`-prefixed entry is a negative match,
+# so this reviews every PR *except* those carrying the `skip-review` label. It
+# fails safe: a forgotten label means more review, not less.
+reviews:
+  auto_review:
+    labels:
+      - "!skip-review"

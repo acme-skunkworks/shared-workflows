@@ -286,3 +286,34 @@ The repo squash-merges and uses the PR title + description as the merge message,
 so the PR title must be a Conventional Commit (enforced by the inline `pr-title`
 job in `ci.yml`; consumers use `reusable-validate-pr-title.yml`).
 Never push to `main` directly — branch and open a PR.
+
+### CodeRabbit review + the `skip-review` label (A-667)
+
+CodeRabbit (a separate SaaS bot from the Claude review workflows) auto-reviews
+every PR and shares a fair-usage quota. Estate-wide fan-outs open half a dozen
+mechanical re-sync PRs at once, which would otherwise burn that quota and throttle
+the PRs bringing new functionality. To opt a rollout PR out, label it
+**`skip-review`**.
+
+`.coderabbit.yaml` at the repo root drives this with a **denylist**:
+
+```yaml
+reviews:
+  auto_review:
+    labels:
+      - "!skip-review"
+```
+
+The `!`-prefix is a negative match — CodeRabbit reviews every PR _except_ those
+labelled `skip-review`. It **fails safe**: a forgotten label means more review,
+not less. CodeRabbit reads this file from the PR's **base branch**, so a change to
+it only takes effect once merged to `main`.
+
+The label is repo-local (create it with `gh label create skip-review --color
+ededed --description 'Fanned-out rollout PR — CodeRabbit skips it'` before it can
+be applied). Fanning the config + label out across the estate — and having
+re-sync PRs opened with `--label skip-review` — belongs to the private
+`release-orchestrator` (it already holds the cross-repo `road-runner-bot`
+credential), **not** this repo, which has no cross-repo write capability by
+design. Agent-facing guidance for agents to apply the label will live in the
+estate's shared `AGENTS.md` once A-668 ships.
