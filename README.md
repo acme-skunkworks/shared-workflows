@@ -27,9 +27,10 @@ release gate pattern).
 
 ## How to consume
 
-Reference a workflow from any repo by its path, **pinned to a commit SHA**, and
-let Dependabot keep the SHA current (see [Versioning](#versioning)). Triggers
-live in your caller; the reusable workflow holds the job.
+Reference a workflow from any repo by its path, using the **floating major tag
+`@v1`** (see [Versioning](#versioning)) — new reusable releases land at your
+caller automatically, with no per-repo SHA bump. Triggers live in your caller;
+the reusable workflow holds the job.
 
 ### Required caller permissions
 
@@ -108,7 +109,7 @@ permissions:
 
 jobs:
   claude:
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@<sha> # v1.0.2
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@v1
     secrets: inherit
 ```
 
@@ -148,7 +149,7 @@ permissions:
 
 jobs:
   claude-review:
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@<sha> # v1.0.2
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@v1
     secrets: inherit
 ```
 
@@ -174,7 +175,7 @@ permissions:
 
 jobs:
   pr-title: # ← keep this job id stable across the estate (see below)
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@<sha> # v1.0.2
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-pr-title.yml@v1
 ```
 
 **Required-check context (A-400 / A-405).** The reusable job is named
@@ -187,16 +188,27 @@ allow-list; defaults to the estate's Conventional Commit types).
 
 ## Versioning
 
-Pin every `uses:` to a **commit SHA**, with the human-readable tag in a trailing
-comment, and let Dependabot bump it — exactly how the estate pins third-party
-actions:
+Pin every reusable-workflow caller to the **floating major tag `@v1`**:
 
 ```yaml
-uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@1a2b3c4… # v1.0.2
+uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude.yml@v1
 ```
 
-Add the `github-actions` ecosystem to each consumer's `.github/dependabot.yml`
-(it covers reusable-workflow refs):
+`v1` moves forward onto each new `vX.Y.Z` release, so non-breaking fixes and
+features arrive at your caller with no SHA bump. GitHub permits a **tag** ref for
+a reusable-workflow caller even under `sha_pinning_required` (the reusable-workflow
+exception) — so this stays policy-compliant. Note this is the **one** place a
+floating tag is allowed: true `uses:` **actions** (including `claude-code-action`
+_inside_ the reusables) must still be SHA-pinned; that pin lives centrally in the
+reusable and Dependabot bumps it there, so consumers never see it.
+
+A future breaking release ships as `v2` and does **not** move `v1`; opt in
+deliberately by bumping your caller to `@v2`.
+
+Still add the `github-actions` ecosystem to each consumer's `.github/dependabot.yml`
+— it keeps the repo's own third-party actions current and will surface a future
+`v2`. It no longer churns the `@v1` reusable refs every release (that churn is
+exactly what the floating tag removes):
 
 ```yaml
 version: 2
@@ -213,9 +225,11 @@ updates:
       include: scope
 ```
 
-Releases here are tagged (`vX.Y.Z`); use the SHA the tag points at. The current
-release is **`v1.0.2`** — the full history (`v0.1.0`–`v1.0.2`) is in
-[`changelog/`](changelog/), and each tag has a matching GitHub release.
+Releases here are tagged (`vX.Y.Z`), and the floating **`v1`** tag tracks the
+latest `v1.x`. The current release is **`v1.0.3`** — the full history
+(`v0.1.0`–`v1.0.3`) is in [`changelog/`](changelog/), and each tag has a matching
+GitHub release. Prefer `@v1`; if you need to pin an exact commit, use the SHA a
+specific `vX.Y.Z` tag points at.
 
 ## Contributing
 
@@ -227,7 +241,8 @@ PR title.
 > (`startup_failure`), and a cross-repo self-reference is circular before the
 > first tagged SHA exists. So `ci.yml`'s PR-title check is **inline** rather than
 > a caller of `reusable-validate-pr-title.yml`. Consumers reference the reusable
-> workflows by cross-repo `@<sha>` (compliant) — see [How to consume](#how-to-consume).
+> workflows by cross-repo tag `@v1` (compliant — the reusable-workflow tag
+> exception) — see [How to consume](#how-to-consume).
 
 See [CLAUDE.md](CLAUDE.md) for conventions and local testing with
 [`act`](https://github.com/nektos/act).

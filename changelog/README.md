@@ -10,6 +10,28 @@ GitHub release** over the reusable workflows and composite actions, nothing more
 Each entry carries a `version` tying it to the tag it shipped in, and the GitHub
 release notes are sourced from the matching entry's body.
 
+**Move the floating `v1` tag on every release.** Consumers pin their callers to
+`@v1` (A-662), so after tagging a new `vX.Y.Z` and cutting its GitHub release,
+force-move `v1` onto the same commit and push it, or the release never reaches
+`@v1` consumers:
+
+```bash
+git tag -f v1 <release-commit>
+git push -f origin v1
+```
+
+`v1` is a **lightweight** tag: on a perpetually-moving ref an annotated tag's
+embedded tagger/timestamp/message only reflect the last force-move, not a release,
+so they mislead. The permanent `vX.Y.Z` tags stay annotated — that is where the
+release audit trail lives.
+
+A breaking change ships as `v2` (a new floating major) and must **not** move `v1`.
+This step is manual until A-597 automates the release flow.
+
+Also **bump the "current release" pointer and full-history range in
+[`README.md`](../README.md)'s Versioning section** to the new `vX.Y.Z` — the
+routinely-forgotten step that leaves the docs pointing at an old release.
+
 The entries up to and including `v1.0.0` were **hand-authored as a backfill**
 (A-585), reconstructing the project's history from its merged PRs — there was no
 `/send-it`/changelog tooling in this repo when the work landed. New entries, if
