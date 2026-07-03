@@ -87,7 +87,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: 1
+          # Full fetch (all branches/tags), NOT a depth-1 clone of the PR merge
+          # ref (A-636). With track_progress on, claude-code-action runs an
+          # internal `git fetch origin --depth=20 <head-branch>`; a shallow
+          # merge-ref checkout lacks that head-branch ref, so the fetch exits 1
+          # AFTER OIDC succeeds and no review posts. fetch-depth: 0 makes the ref
+          # present. (Cost: full history — negligible for a review job.)
+          fetch-depth: 0
           # claude-code-action supplies its own token (OIDC exchange), so don't
           # leave GITHUB_TOKEN in .git/config (artipacked credential exposure).
           persist-credentials: false
