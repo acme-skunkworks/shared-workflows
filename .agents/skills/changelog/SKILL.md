@@ -16,7 +16,7 @@ compatibility: >-
   `preflight-changelog-ci.mjs` step assumes the consumer repo uses pnpm with a
   committed lockfile; skip it if yours does not.
 metadata:
-  version: 0.8.0
+  version: 0.9.0
   author: Rob Easthope
 allowed-tools: Write, Read, Edit, Glob, Grep, Bash(git:*), Bash(node:*), Bash(pnpm:*)
 ---
@@ -52,15 +52,15 @@ default, so a missing `config.json` or either key absent makes the scripts fail
 loudly rather than silently inherit ACME's identity. The rest are structural and
 keep generic, overridable defaults:
 
-| Key | Meaning | Default |
-| --- | --- | --- |
-| `issueKeys` | Team-key prefixes used to recognise issue IDs in the branch and body. The issue-ID regex is built from these. | **required** |
-| `linearWorkspaceSlug` | Linear workspace slug used to build issue links (`https://linear.app/<slug>/issue/<id>`). | **required** |
-| `baseBranch` | The trunk the branch diff is taken against (`origin/<baseBranch>`). Overridable per-run via the `BASE_REF` env var. | `"main"` |
-| `changelogDir` | Directory the dated entries live in (scanned by the enrichment + validation scripts). | `"changelog"` |
-| `packageRoots` | Monorepo dir prefixes mapping `<root>/<x>/…` → package `<x>` when deriving `affected_packages`. | `["apps", "packages", "services"]` |
-| `fallbackPackage` | Package name for changed paths matching no `packageRoots` prefix. | `"infrastructure"` |
-| `affectedPackages` | Whether to emit the `affected_packages` field at all. Leave `false` for single-package repos (the field is write-only and redundant there — entries stay clean); set `true` in genuine monorepos. `initialise-skills` flips it on when it detects a workspace config. | `false` |
+| Key                   | Meaning                                                                                                                                                                                                                                                               | Default                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `issueKeys`           | Team-key prefixes used to recognise issue IDs in the branch and body. The issue-ID regex is built from these.                                                                                                                                                         | **required**                       |
+| `linearWorkspaceSlug` | Linear workspace slug used to build issue links (`https://linear.app/<slug>/issue/<id>`).                                                                                                                                                                             | **required**                       |
+| `baseBranch`          | The trunk the branch diff is taken against (`origin/<baseBranch>`). Overridable per-run via the `BASE_REF` env var.                                                                                                                                                   | `"main"`                           |
+| `changelogDir`        | Directory the dated entries live in (scanned by the enrichment + validation scripts).                                                                                                                                                                                 | `"changelog"`                      |
+| `packageRoots`        | Monorepo dir prefixes mapping `<root>/<x>/…` → package `<x>` when deriving `affected_packages`.                                                                                                                                                                       | `["apps", "packages", "services"]` |
+| `fallbackPackage`     | Package name for changed paths matching no `packageRoots` prefix.                                                                                                                                                                                                     | `"infrastructure"`                 |
+| `affectedPackages`    | Whether to emit the `affected_packages` field at all. Leave `false` for single-package repos (the field is write-only and redundant there — entries stay clean); set `true` in genuine monorepos. `initialise-skills` flips it on when it detects a workspace config. | `false`                            |
 
 All bundled scripts use only Node built-ins — no `npm install`, no build step.
 They operate on the **consumer repo's root `changelog/` directory** (run them
@@ -226,7 +226,8 @@ ship in the bundle too, and an adopter wiring up the orchestrator/CI gate needs
 them. They are referenced from the consumer's `package.json` scripts and
 workflows rather than invoked during authoring:
 
-- `scripts/finalise-changelog.mjs` — release-time enrichment + version-stamping, **run by the release orchestrator** right after `release-please release-pr` (the consumer exposes it as the `changelog:finalise` script). For each un-finalised entry it resolves the merged PR via `gh`/`git`, fills the post-merge fields (`merged_at` / `commit` / `pr` / `merge_strategy` / `stats`, the last including the merge-excluded `commits` count from the PR commits API), stamps `version` with the just-bumped `package.json` version, and links bare Linear IDs. It composes `lib/enrich.mjs` (the PR-metadata fill), `lib/commit-count.mjs` (the merge-excluded commit count) and `lib/stamp.mjs` (the version stamp).
+- `scripts/finalise-changelog.mjs` — release-time enrichment + version-stamping for **npm targets**, **run by the release orchestrator** right after `release-please release-pr` (the consumer exposes it as the `changelog:finalise` script). For each un-finalised entry it resolves the merged PR via `gh`/`git`, fills the post-merge fields (`merged_at` / `commit` / `pr` / `merge_strategy` / `stats`, the last including the merge-excluded `commits` count from the PR commits API), stamps `version` with the just-bumped `package.json` version, and links bare Linear IDs. It composes `lib/enrich.mjs` (the PR-metadata fill), `lib/commit-count.mjs` (the merge-excluded commit count) and `lib/stamp.mjs` (the version stamp).
+- `scripts/enrich-changelog.mjs` — post-merge enrichment for **deploy targets** (octavo, shared-workflows), which are never checked out during the release flow and so can't finalise inline. **Run by the release orchestrator's daily `enrich-changelogs.yml` cron** on the checked-out target (the consumer exposes it as the `changelog:enrich` script). It reads one merged PR's data from an env-var interface (`BRANCH_NAME` / `MERGED_AT` / `MERGE_SHA` / `MERGE_STRATEGY` / `PR_NUMBER` / `ADDITIONS` / `DELETIONS` / `CHANGED_FILES`), finds the entry by its `branch:`, and fills the same post-merge field group as finalise (minus `version`, which a deploy target's own tag flow owns, and minus `commits`, which the cron doesn't resolve). A thin wrapper over `lib/enrich.mjs`; fill-once and idempotent, so the cron can re-run safely. `--check` exits 1 when an entry still needs enriching; `--dry-run` previews.
 - `scripts/check-changelog-completeness.mjs` — the **CI completeness gate**, run by the consumer's validation workflow: a release-triggering (`feat`/`fix`/breaking) PR title must carry a dated `changelog/` entry, or the build fails.
 - `scripts/backfill-commits.mjs` — a one-off backfill of `stats.commits` across the existing `changelog/` backlog (for adopting the count after the fact). Resolves each entry's merged PR via `gh`, splices in only the `commits` line (no re-serialise), and is idempotent; `--dry-run` previews. Not part of authoring or the release flow.
 
