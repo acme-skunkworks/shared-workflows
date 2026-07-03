@@ -12,13 +12,18 @@ release notes are sourced from the matching entry's body.
 
 **Move the floating `v1` tag on every release.** Consumers pin their callers to
 `@v1` (A-662), so after tagging a new `vX.Y.Z` and cutting its GitHub release,
-force-move the annotated `v1` tag onto the same commit and push it, or the release
-never reaches `@v1` consumers:
+force-move `v1` onto the same commit and push it, or the release never reaches
+`@v1` consumers:
 
 ```bash
-git tag -f -a v1 <release-commit> -m "Floating major tag: track latest v1.x"
+git tag -f v1 <release-commit>
 git push -f origin v1
 ```
+
+`v1` is a **lightweight** tag: on a perpetually-moving ref an annotated tag's
+embedded tagger/timestamp/message only reflect the last force-move, not a release,
+so they mislead. The permanent `vX.Y.Z` tags stay annotated — that is where the
+release audit trail lives.
 
 A breaking change ships as `v2` (a new floating major) and must **not** move `v1`.
 This step is manual until A-597 automates the release flow.

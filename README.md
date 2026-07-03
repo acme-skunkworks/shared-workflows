@@ -27,8 +27,8 @@ release gate pattern).
 
 ## How to consume
 
-Reference a workflow from any repo by its path, pinned to the **floating major
-tag `@v1`** (see [Versioning](#versioning)) — new reusable releases land at your
+Reference a workflow from any repo by its path, using the **floating major tag
+`@v1`** (see [Versioning](#versioning)) — new reusable releases land at your
 caller automatically, with no per-repo SHA bump. Triggers live in your caller;
 the reusable workflow holds the job.
 
