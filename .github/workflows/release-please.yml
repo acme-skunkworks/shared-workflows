@@ -1,0 +1,49 @@
+name: Release Please
+
+# Phase-A self-release for shared-workflows (A-597). This repo publishes no npm
+# package — a "release" here is a `vX.Y.Z` git tag + a GitHub Release over the
+# reusable workflows and composite actions (see changelog/README.md).
+#
+# release-please (release-type `node`, `skip-changelog`) maintains the release PR
+# from the Conventional-Commit history: it bumps package.json + the manifest,
+# and on merge cuts the `vX.Y.Z` tag and GitHub Release. The dated `changelog/`
+# entries stay the curated human record; the Release body is release-please's
+# commit-derived summary.
+#
+# THIS WORKFLOW IS INTERIM. Phase B (A-597) hands release-please off to the
+# private release-orchestrator (shared-workflows becomes a `kind: deploy`
+# target); this file is deleted at that cutover. Until then it lets the repo
+# self-release without waiting on the orchestrator.
+#
+# Note: the release PR is opened under GITHUB_TOKEN, so it does NOT trigger this
+# repo's `on: pull_request` CI (GitHub's recursion guard). Do NOT make `GO/NO GO`
+# a required check on main while this interim workflow drives releases, or the
+# release PR — whose checks never run — cannot be merged. The orchestrator's App
+# token (Phase B) does fire CI, which is when `GO/NO GO` becomes required.
+#
+# Standalone workflow (not a `reusable-*.yml`), so a top-level `concurrency:` is
+# legal here — see CLAUDE.md on why reusables must not carry one.
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: 🚀 Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔖 Run release-please
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          token: ${{ secrets.GITHUB_TOKEN }}

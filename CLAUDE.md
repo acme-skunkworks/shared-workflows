@@ -203,6 +203,32 @@ Third-party actions are SHA-pinned with a `# vX.Y.Z` comment (estate policy);
 Dependabot bumps them weekly (grouped). Keep the same discipline when adding or
 updating any `uses:` line.
 
+## Releasing this repo (A-597)
+
+This repo publishes **no npm package** — a "release" is a `vX.Y.Z` git tag + a
+GitHub Release over the reusable workflows and composite actions. The flow is
+modelled on **octavo**, the estate's `kind: deploy` (non-publishing)
+release-orchestrator target.
+
+- **release-please** (`release-please-config.json`, `release-type: node`,
+  `skip-changelog: true`; version state in `.release-please-manifest.json` +
+  `package.json`) maintains the release PR from the Conventional-Commit history
+  and, on merge, cuts the `vX.Y.Z` tag + GitHub Release. It does **not** write a
+  root `CHANGELOG.md` — the dated [`changelog/`](changelog/) entries remain the
+  curated human record.
+- **`move-floating-major.yml`** force-moves the floating major tag (`v1`, …) onto
+  each release commit — shared-workflows-specific (consumers pin `@v1`, A-662),
+  which octavo has no equivalent of. Phase-independent.
+- **Phased rollout (A-597):** _Phase A (current)_ — the in-repo
+  `release-please.yml` drives releases directly. Because a `GITHUB_TOKEN`-opened
+  PR does not trigger this repo's `on: pull_request` CI, **`GO/NO GO` must not be
+  a required check on `main`** while Phase A is live (the release PR's checks
+  never run, so a required gate would wedge it). _Phase B_ — hand release-please
+  off to the private release-orchestrator (add shared-workflows to its
+  `orchestrate-releases.yml` / `enrich-changelogs.yml` matrices), delete
+  `release-please.yml`, enable forward changelog authoring (`send-it`
+  `changelog: true` + the `changelog` skill), and make `GO/NO GO` required.
+
 ## Commands
 
 ```bash
