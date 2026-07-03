@@ -26,6 +26,8 @@ name: Reusable / Claude Code Review
 #   jobs:
 #     claude-review:
 #       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-claude-code-review.yml@v1
+#       # Requires CLAUDE_CODE_OAUTH_TOKEN in THIS repo's Actions secrets — NOT
+#       # ANTHROPIC_API_KEY (an empty ANTHROPIC_API_KEY in the log is a red herring).
 #       secrets: inherit
 
 on:
