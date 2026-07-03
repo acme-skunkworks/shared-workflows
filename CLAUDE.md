@@ -216,6 +216,16 @@ release-orchestrator target.
   and, on merge, cuts the `vX.Y.Z` tag + GitHub Release. It does **not** write a
   root `CHANGELOG.md` — the dated [`changelog/`](changelog/) entries remain the
   curated human record.
+- **`group-pull-request-title-pattern` is mandatory (A-677).** With
+  `separate-pull-requests: false` release-please titles the combined release PR
+  from its _group_ pattern, whose default (`chore: release main`) carries no
+  `${version}`/`${component}`. The orchestrator's `release-please github-release`
+  step then can't parse the merged title and cuts **no** tag/Release (so
+  `move-floating-major` never fires). We pin
+  `"chore${scope}: release${component} ${version}"` so the title round-trips —
+  the same key must sit in every `kind: deploy` target (octavo) and is documented
+  as a prerequisite in the orchestrator's onboarding docs. It does **not** affect
+  the tag (`include-component-in-tag: false` keeps tags bare `vX.Y.Z`).
 - **`move-floating-major.yml`** force-moves the floating major tag (`v1`, …) onto
   each release commit — shared-workflows-specific (consumers pin `@v1`, A-662),
   which octavo has no equivalent of. Phase-independent.
