@@ -6,6 +6,16 @@ created_at: "2026-07-01T11:41:33Z"
 category: fix
 breaking: false
 issues: ["A-624"]
+branch: a-624-reusable-pkg-release-add-build-optout
+merged_at: "2026-07-01T11:41:33Z"
+commit: 9febdb1
+merge_strategy: squash
+pr: 22
+stats:
+  loc_added: 18
+  loc_removed: 0
+  files_changed: 2
+  commits: 1
 ---
 
 ## Fixed

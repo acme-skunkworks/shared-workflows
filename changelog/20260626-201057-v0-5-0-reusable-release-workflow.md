@@ -6,6 +6,16 @@ created_at: "2026-06-26T20:10:57Z"
 category: feature
 breaking: false
 issues: ["A-417"]
+branch: sk-417-reusable-releaseyml-workflow
+merged_at: "2026-06-26T20:10:57Z"
+commit: 18e081c
+merge_strategy: squash
+pr: 9
+stats:
+  loc_added: 627
+  loc_removed: 0
+  files_changed: 2
+  commits: 2
 ---
 
 ## Added

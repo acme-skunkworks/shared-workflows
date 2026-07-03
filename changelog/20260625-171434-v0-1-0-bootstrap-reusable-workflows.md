@@ -6,6 +6,16 @@ created_at: "2026-06-25T17:14:34Z"
 category: feature
 breaking: false
 issues: ["A-414"]
+branch: feat/shared-workflows-bootstrap
+merged_at: "2026-06-25T17:14:34Z"
+commit: bdd194f
+merge_strategy: squash
+pr: 1
+stats:
+  loc_added: 2106
+  loc_removed: 1
+  files_changed: 22
+  commits: 7
 ---
 
 ## Added

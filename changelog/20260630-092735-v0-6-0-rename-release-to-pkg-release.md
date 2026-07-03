@@ -6,6 +6,16 @@ created_at: "2026-06-30T09:27:35Z"
 category: refactor
 breaking: true
 issues: ["A-543"]
+branch: a-543-pkg-release-rename-the-release-workflow-both-layers
+merged_at: "2026-06-30T09:27:35Z"
+commit: 990abae
+merge_strategy: squash
+pr: 15
+stats:
+  loc_added: 23
+  loc_removed: 20
+  files_changed: 5
+  commits: 3
 ---
 
 ## Breaking

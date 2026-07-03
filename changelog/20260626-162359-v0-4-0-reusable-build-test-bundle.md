@@ -6,6 +6,16 @@ created_at: "2026-06-26T16:23:59Z"
 category: feature
 breaking: false
 issues: ["A-416"]
+branch: sk-416-reusable-build-testyml-workflow
+merged_at: "2026-06-26T16:23:59Z"
+commit: d0a5949
+merge_strategy: squash
+pr: 7
+stats:
+  loc_added: 222
+  loc_removed: 7
+  files_changed: 5
+  commits: 2
 ---
 
 ## Added

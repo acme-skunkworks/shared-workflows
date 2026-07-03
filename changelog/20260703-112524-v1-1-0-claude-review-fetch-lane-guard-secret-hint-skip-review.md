@@ -6,6 +6,16 @@ created_at: "2026-07-03T11:25:24Z"
 category: feature
 breaking: false
 issues: ["A-445", "A-636", "A-665", "A-667"]
+branch: a-665-release-a646-guard-secret-hint
+merged_at: "2026-07-03T11:31:30Z"
+commit: 4ea8cb2
+merge_strategy: squash
+pr: 30
+stats:
+  loc_added: 63
+  loc_removed: 2
+  files_changed: 4
+  commits: 2
 ---
 
 ## Added

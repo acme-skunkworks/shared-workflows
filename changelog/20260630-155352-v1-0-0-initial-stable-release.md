@@ -6,6 +6,16 @@ created_at: "2026-06-30T15:53:52Z"
 category: feature
 breaking: false
 issues: ["A-585"]
+branch: a-585-cut-shared-workflows-first-release-tag-backfill-tag-history
+merged_at: "2026-06-30T16:34:19Z"
+commit: 6cbcab6
+merge_strategy: squash
+pr: 19
+stats:
+  loc_added: 384
+  loc_removed: 19
+  files_changed: 16
+  commits: 2
 ---
 
 ## Added

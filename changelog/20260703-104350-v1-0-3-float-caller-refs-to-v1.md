@@ -6,6 +6,16 @@ created_at: "2026-07-03T10:43:50Z"
 category: docs
 breaking: false
 issues: ["A-662"]
+branch: a-662-adopt-floating-caller-tag-pattern-for-the-shared-claude
+merged_at: "2026-07-03T11:02:32Z"
+commit: 7b11c8c
+merge_strategy: squash
+pr: 31
+stats:
+  loc_added: 90
+  loc_removed: 22
+  files_changed: 6
+  commits: 3
 ---
 
 ## Changed
