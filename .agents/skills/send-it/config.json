@@ -7,5 +7,5 @@
     "files",
     "publishConfig"
   ],
-  "changelog": false
+  "changelog": true
 }

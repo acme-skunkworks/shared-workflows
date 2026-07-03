@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "changelog": {
+      "source": "acme-skunkworks/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/changelog/SKILL.md",
+      "computedHash": "f5dc96f4bedd53a2832bc0411116b063d4617211b97933610c49a663dfe348d3"
+    },
     "cleanup-repo": {
       "source": "acme-skunkworks/agent-skills",
       "sourceType": "github",

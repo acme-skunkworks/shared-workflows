@@ -8,3 +8,11 @@ reviews:
   auto_review:
     labels:
       - "!skip-review"
+    # The release-orchestrator's changelog-enrichment PRs are mechanical,
+    # bot-authored post-merge field fills — skip them so they don't burn review
+    # quota. Title match is primary; the bot login is the belt-and-braces. Inert
+    # until shared-workflows joins the enrich-changelogs matrix (A-597 Layer B).
+    ignore_title_keywords:
+      - "enrich entry for"
+    ignore_usernames:
+      - "road-runner-bot[bot]"
