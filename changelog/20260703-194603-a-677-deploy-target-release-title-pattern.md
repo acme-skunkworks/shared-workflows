@@ -1,11 +1,20 @@
 ---
-title: "Fix orchestrated deploy-target releases never cutting a tag/Release"
-release_note: "Orchestrated releases of this repo now cut the `vX.Y.Z` tag and GitHub Release automatically, instead of silently producing nothing on merge."
-created_at: "2026-07-03T19:46:03Z"
+title: Fix orchestrated deploy-target releases never cutting a tag/Release
+release_note: Orchestrated releases of this repo now cut the `vX.Y.Z` tag and GitHub Release automatically, instead of silently producing nothing on merge.
+created_at: '2026-07-03T19:46:03Z'
 branch: a-677-deploy-target-release-title-pattern
 category: fix
 breaking: false
-issues: ["A-677"]
+issues:
+  - A-677
+merged_at: '2026-07-03T19:42:59Z'
+commit: e4711bf
+merge_strategy: squash
+pr: 42
+stats:
+  loc_added: 36
+  loc_removed: 1
+  files_changed: 3
 ---
 
 ## Fixed
