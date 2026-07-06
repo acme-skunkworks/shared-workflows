@@ -16,7 +16,7 @@ compatibility: >-
   `preflight-changelog-ci.mjs` step assumes the consumer repo uses pnpm with a
   committed lockfile; skip it if yours does not.
 metadata:
-  version: 0.9.0
+  version: 0.9.2
   author: Rob Easthope
 allowed-tools: Write, Read, Edit, Glob, Grep, Bash(git:*), Bash(node:*), Bash(pnpm:*)
 ---
@@ -52,15 +52,15 @@ default, so a missing `config.json` or either key absent makes the scripts fail
 loudly rather than silently inherit ACME's identity. The rest are structural and
 keep generic, overridable defaults:
 
-| Key                   | Meaning                                                                                                                                                                                                                                                               | Default                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `issueKeys`           | Team-key prefixes used to recognise issue IDs in the branch and body. The issue-ID regex is built from these.                                                                                                                                                         | **required**                       |
-| `linearWorkspaceSlug` | Linear workspace slug used to build issue links (`https://linear.app/<slug>/issue/<id>`).                                                                                                                                                                             | **required**                       |
-| `baseBranch`          | The trunk the branch diff is taken against (`origin/<baseBranch>`). Overridable per-run via the `BASE_REF` env var.                                                                                                                                                   | `"main"`                           |
-| `changelogDir`        | Directory the dated entries live in (scanned by the enrichment + validation scripts).                                                                                                                                                                                 | `"changelog"`                      |
-| `packageRoots`        | Monorepo dir prefixes mapping `<root>/<x>/…` → package `<x>` when deriving `affected_packages`.                                                                                                                                                                       | `["apps", "packages", "services"]` |
-| `fallbackPackage`     | Package name for changed paths matching no `packageRoots` prefix.                                                                                                                                                                                                     | `"infrastructure"`                 |
-| `affectedPackages`    | Whether to emit the `affected_packages` field at all. Leave `false` for single-package repos (the field is write-only and redundant there — entries stay clean); set `true` in genuine monorepos. `initialise-skills` flips it on when it detects a workspace config. | `false`                            |
+| Key | Meaning | Default |
+| --- | --- | --- |
+| `issueKeys` | Team-key prefixes used to recognise issue IDs in the branch and body. The issue-ID regex is built from these. | **required** |
+| `linearWorkspaceSlug` | Linear workspace slug used to build issue links (`https://linear.app/<slug>/issue/<id>`). | **required** |
+| `baseBranch` | The trunk the branch diff is taken against (`origin/<baseBranch>`). Overridable per-run via the `BASE_REF` env var. | `"main"` |
+| `changelogDir` | Directory the dated entries live in (scanned by the enrichment + validation scripts). | `"changelog"` |
+| `packageRoots` | Monorepo dir prefixes mapping `<root>/<x>/…` → package `<x>` when deriving `affected_packages`. | `["apps", "packages", "services"]` |
+| `fallbackPackage` | Package name for changed paths matching no `packageRoots` prefix. | `"infrastructure"` |
+| `affectedPackages` | Whether to emit the `affected_packages` field at all. Leave `false` for single-package repos (the field is write-only and redundant there — entries stay clean); set `true` in genuine monorepos. `initialise-skills` flips it on when it detects a workspace config. | `false` |
 
 All bundled scripts use only Node built-ins — no `npm install`, no build step.
 They operate on the **consumer repo's root `changelog/` directory** (run them
@@ -108,11 +108,10 @@ for the full rules. In short:
 - **`created_at` is sacred** — set once on create (UTC time of first run); on
   update, preserve it verbatim.
 - **Never authored here:** `stats` (`files_changed`, `loc_added`, `loc_removed`,
-  `commits`) and the post-merge fields `merged_at` / `commit` / `merge_strategy`. A release
-  step finalises them from canonical GitHub PR data after merge. Emit them as
+  `commits`) and the post-merge fields `merged_at` / `commit` / `pr` / `merge_strategy`. A release
+  step finalises them from canonical GitHub PR data after merge — `pr` included, resolved
+  from the merged PR by its `branch:` (never written by the ship flow). Emit them as
   blank placeholders on create; leave existing values untouched on update.
-- `pr` is back-filled by the ship flow once the PR exists (not here when
-  standalone).
 
 The skill **emits the derived `issues` array** as a handoff — a ship flow reuses
 it for the PR body and any Linear writeback (e.g. via a `linear-sync` skill).
@@ -143,8 +142,8 @@ enrichment round-trip; quoting keeps them lossless.
 
 **On update:** preserve `created_at` and the filename; rewrite `title`,
 `release_note`, `category`, `breaking`, `co_authors`, `issues`, and the body;
-leave `merged_at` / `commit` / `merge_strategy` / `stats` alone; update `pr` only
-if it was blank and a PR now exists.
+leave `merged_at` / `commit` / `pr` / `merge_strategy` / `stats` alone (the
+release/enrich step fills them post-merge, `pr` branch-resolved).
 
 Use the frontmatter field order shown in
 [`references/changelog-contract.md`](references/changelog-contract.md). **Only when
@@ -202,7 +201,8 @@ continuing — do not hand a malformed entry to the ship flow.
   never pushes or opens a PR.
 - **Inside a ship flow** the same steps run before push; the ship flow then
   commits the entry (`docs(changelog): <title>`), pushes, and opens or updates the
-  PR, back-filling `pr:` once the PR number is known.
+  PR. It leaves `pr` blank — the release/enrich step fills it post-merge,
+  branch-resolved from the merged PR.
 
 ## Implementation
 

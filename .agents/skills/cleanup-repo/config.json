@@ -6,5 +6,6 @@
   "mainBranch": "main",
   "protectedBranches": [
     "main"
-  ]
+  ],
+  "linearWritebackDefault": "no"
 }
