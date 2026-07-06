@@ -17,13 +17,13 @@
       "source": "acme-skunkworks/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/commit/SKILL.md",
-      "computedHash": "9407fed25087dcdf783bbde8d5d7296ef8dd04d4c66abd0b14829fd897cca17d"
+      "computedHash": "5634b52c84032784ee0946d7cdd2b25ed0ba66e1ad2b24bbf903641a8292d998"
     },
     "initialise-skills": {
       "source": "acme-skunkworks/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/initialise-skills/SKILL.md",
-      "computedHash": "76b6c816026dd3c6943adb0473ccfda216c3b5058b4efe11a73eb1cd20d4f196"
+      "computedHash": "fb9518478d4c2ff4371a551e0eee28f0c935e9ce4d8e129e47f09c927bb8ef17"
     },
     "linear-sync": {
       "source": "acme-skunkworks/agent-skills",
@@ -41,7 +41,7 @@
       "source": "acme-skunkworks/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/release-status/SKILL.md",
-      "computedHash": "0211c4fe8cfe69fa01a77c97692ad71a8bdb92922af73ed11223990766023af4"
+      "computedHash": "554292720920f26ea6ef92a3f00235a4ace71092fa1fe7d8ee9f2bf4f662bbce"
     },
     "send-it": {
       "source": "acme-skunkworks/agent-skills",
