@@ -368,11 +368,12 @@ consumer to CodeRabbit's own defaults. Beyond the `skip-review` denylist it carr
 - **`language: "en-GB"`** — review prose in British English, matching house style.
 - **`reviews.profile: "chill"`** — a balanced signal-to-noise default (fewer
   nitpicks than `assertive`, more than `quiet`).
-- **Two more skips** under `auto_review`: `ignore_title_keywords: ["enrich entry
-for"]` and `ignore_usernames: ["road-runner-bot[bot]"]` silence the
-  orchestrator's mechanical changelog-enrich PRs (the username skip also covers
-  road-runner-bot's release-please PRs). **Dependabot PRs are deliberately not
-  skipped** — dependency bumps warrant a review (fail-safe toward more review).
+- **Two more skips** under `auto_review`: an `ignore_title_keywords` entry
+  (`"enrich entry for"`) and an `ignore_usernames` entry
+  (`"road-runner-bot[bot]"`) silence the orchestrator's mechanical
+  changelog-enrich PRs (the username skip also covers road-runner-bot's
+  release-please PRs). **Dependabot PRs are deliberately not skipped** —
+  dependency bumps warrant a review (fail-safe toward more review).
 - **`path_filters`** excluding vendored/generated trees (`pnpm-lock.yaml`,
   `**/dist/**`, `**/node_modules/**`, and the re-vendored `.claude/skills/**` +
   `.agents/skills/**` bundles) — reviewing them is noise.
