@@ -357,3 +357,31 @@ re-sync PRs opened with `--label skip-review` — belongs to the private
 credential), **not** this repo, which has no cross-repo write capability by
 design. Agent-facing guidance for agents to apply the label will live in the
 estate's shared `AGENTS.md` once A-668 ships.
+
+#### The canonical config is more than the denylist (A-732)
+
+Because A-712 fans `.coderabbit.yaml` out **verbatim** to every consumer flagged
+`coderabbit: true`, this file is the estate's single source of truth and must be a
+**strict superset** of every skip convention — anything omitted reverts that
+consumer to CodeRabbit's own defaults. Beyond the `skip-review` denylist it carries:
+
+- **`language: "en-GB"`** — review prose in British English, matching house style.
+- **`reviews.profile: "chill"`** — a balanced signal-to-noise default (fewer
+  nitpicks than `assertive`, more than `quiet`).
+- **Two more skips** under `auto_review`: an `ignore_title_keywords` entry
+  (`"enrich entry for"`) and an `ignore_usernames` entry
+  (`"road-runner-bot[bot]"`) silence the orchestrator's mechanical
+  changelog-enrich PRs (the username skip also covers road-runner-bot's
+  release-please PRs). **Dependabot PRs are deliberately not skipped** —
+  dependency bumps warrant a review (fail-safe toward more review).
+- **`path_filters`** excluding vendored/generated trees (`pnpm-lock.yaml`,
+  `**/dist/**`, `**/node_modules/**`, and the re-vendored `.claude/skills/**` +
+  `.agents/skills/**` bundles) — reviewing them is noise.
+- **`path_instructions`** encoding two estate policies as reviewer guidance:
+  British English for `**/*.md` prose (scoped to prose, not identifiers), and for
+  `.github/**` the SHA-pin-with-`# vX.Y.Z`-comment rule plus the no-top-level-
+  `concurrency:`-in-`reusable-*.yml` rule.
+
+Keep this file a superset when editing: stripping a skip would silently re-review
+those PRs across the whole estate. Brace-expansion globs (`{md,mdx}`) are **not**
+documented in CodeRabbit's schema, so path patterns avoid them.
