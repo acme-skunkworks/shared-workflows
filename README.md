@@ -15,11 +15,14 @@ release gate pattern).
 
 ## Available workflows
 
-| Workflow                          | Purpose                                                            | Secrets                   |
-| --------------------------------- | ------------------------------------------------------------------ | ------------------------- |
-| `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.           | `CLAUDE_CODE_OAUTH_TOKEN` |
-| `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                          | `CLAUDE_CODE_OAUTH_TOKEN` |
-| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (the squash-merge subject). | — (uses `GITHUB_TOKEN`)   |
+| Workflow                          | Purpose                                                                                       | Secrets                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------- |
+| `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.                                      | `CLAUDE_CODE_OAUTH_TOKEN` |
+| `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                                                     | `CLAUDE_CODE_OAUTH_TOKEN` |
+| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (the squash-merge subject).                            | — (uses `GITHUB_TOKEN`)   |
+| `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate (Layer 2). | — (uses `GITHUB_TOKEN`)   |
+| `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
+| `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
 
 > **Why `reusable-` prefixes?** It lets a consumer repo (and this repo, which
 > dogfoods its own workflows) keep a same-named caller stub — e.g. `claude.yml`
@@ -189,6 +192,103 @@ so every repo reports the same context —
 `pr-title / Validate PR title is a Conventional Commit` — which a single
 branch-protection rule can pin estate-wide. Input: `types` (newline-separated
 allow-list; defaults to the estate's Conventional Commit types).
+
+### `reusable-lint.yml`
+
+```yaml
+# .github/workflows/lint.yml
+name: Lint
+
+on:
+  pull_request:
+
+# Required — see "Required caller permissions" above. The bundle only checks
+# out and lints, so contents:read is enough (the org default already grants it,
+# but a permissions: block resets every other scope to none — keep this list in
+# step with any sibling caller job that needs more).
+permissions:
+  contents: read
+
+jobs:
+  lint: # ← keep this job id stable (renders as `lint / Lint`)
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-lint.yml@v1
+```
+
+Each lane has a boolean opt-out (`eslint`, `markdown`, `yaml`, `actionlint`,
+`changelog` — all default `true`), alongside pass-throughs `node-version-file`,
+`eslint-args`, `markdown-globs`, `yaml-paths`, `yamllint-version`,
+`actionlint-version` and `changelog-script`. Disabling **every** lane is a hard
+error, not a silent green pass — the run fails fast before checkout (A-445).
+
+### `reusable-build-test.yml`
+
+```yaml
+# .github/workflows/build-test.yml
+name: Build & Test
+
+on:
+  pull_request:
+
+# Required — see "Required caller permissions" above. Build and test only need
+# contents:read; a permissions: block resets every other scope to none, so keep
+# this list in step with any sibling caller job that needs more.
+permissions:
+  contents: read
+
+jobs:
+  build-test: # ← keep this job id stable (renders as `build-test / Build & Test`)
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-build-test.yml@v1
+```
+
+Each lane has a boolean opt-out — `build`, `typecheck`, `test` and `shellcheck`
+default `true`; `bats` and `coverage` default `false` — alongside pass-throughs
+`node-version-file`, `build-script`, `tsconfig`, `test-args`, `shellcheck-paths`,
+`shellcheck-severity` and `bats-paths`. As with the lint bundle, disabling
+**every** lane fails fast rather than passing green (A-445).
+
+### `reusable-pkg-release.yml`
+
+```yaml
+# .github/workflows/pkg-release.yml
+name: Package release
+
+# NO workflow_dispatch — a dispatched run satisfies the same npm OIDC subject as
+# a legitimate post-merge push and could publish a poisoned tarball (A-326).
+on:
+  push:
+    branches: [main]
+
+# Concurrency lives HERE (the caller), not in the reusable: cancel-in-progress:
+# false queues releases rather than cancelling an in-flight publish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+# Required — see "Required caller permissions" above. The caller grants the
+# SUPERSET of the reusable's per-job scopes; each publish job narrows from here.
+permissions:
+  contents: write
+  id-token: write
+  issues: write
+  packages: write
+  attestations: write
+
+jobs:
+  release:
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-pkg-release.yml@v1
+    with:
+      npm-scope: "@acme-skunkworks"
+```
+
+**Consumer prerequisite:** define a branch-protected **`npm-release`**
+environment restricted to the release branch. A reusable workflow's
+`environment:` resolves in the caller repo; if it is absent GitHub silently
+auto-creates it **unprotected**, losing the ref gate (A-326). There is **no**
+`secrets:` block — the npm leg publishes via OIDC Trusted Publishing (no
+`NPM_TOKEN`) and the Packages/tag/release legs use the automatic `GITHUB_TOKEN`.
+`npm-scope` is the only required input; a build-less package (config- or
+bundle-only, no `build` script) passes `build: false`. Other notable inputs:
+`node-version-file`, `publish-github-packages`, `changelog-dir` and `tag-prefix`.
 
 ## Versioning
 
