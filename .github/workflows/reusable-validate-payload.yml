@@ -1,0 +1,200 @@
+name: Reusable / Validate fanned payload
+
+# Reusable (workflow_call) version of the estate's fan-out PAYLOAD check (A-738).
+#
+# The release-orchestrator fan-out spine (A-711) accepts `mergeable_state:
+# unstable` as mergeable — it must, so a skipped review bot (A-396) doesn't wedge
+# the merge. But that means a consumer whose ONLY required checks are the
+# `GO/NO GO` aggregator and `pr-title` has NOTHING validating the fanned payload
+# itself: a broken `.claude/skills/**` bundle or an unparseable `.coderabbit.yaml`
+# keeps those green, reaches `unstable`, and the spine merges (and, on octavo,
+# deploys) it. This workflow is the payload-exercising REQUIRED check that closes
+# that A-714 trap — a malformed payload fails it, the state becomes `blocked`
+# (not `unstable`), and the spine refuses to merge.
+#
+# What it validates is DECLARED by the caller, never auto-detected — a required
+# check that silently skips an absent payload is the same green-but-blind hole it
+# exists to close. A skills consumer sets `skills: true` (the bundle MUST be
+# present and well-formed); a CodeRabbit consumer sets `coderabbit: true` (the
+# config MUST be present and parse). The release-orchestrator's caller-file
+# adapter stamps these from each repo's fleet.json profile.
+#
+# STATUS-CHECK CONTEXT: the job below is named `Validate fanned payload` — the
+# estate-canonical string a single required-check rule pins across every consumer.
+# A reusable-workflow check renders as `<caller-job-id> / <job-name>`, so callers
+# MUST use the caller job id `validate-payload`, giving the stable context
+# `validate-payload / Validate fanned payload`. Do NOT rename either half — the
+# per-repo ruleset pins this exact string.
+#
+# The validator is a zero-dependency Node script inlined here (no consumer
+# toolchain / setup-project needed — a broken payload must fail EVEN IF it also
+# breaks the repo's own install). YAML parsing for `.coderabbit.yaml` uses
+# `npx -y js-yaml` (a parse is the schema-parse gate A-738 asks for; an invalid
+# document exits non-zero). A reusable workflow cannot reach a sibling local
+# action (`./` resolves against the caller — see reusable-lint.yml), so inlining
+# avoids a cross-repo action-checkout dance.
+#
+# REQUIRED CALLER PERMISSIONS (A-621): under the org default read-only token this
+# job needs only `contents: read`, which the default covers; declare it in the
+# caller stub anyway (a `permissions:` block resets every other scope to none).
+#
+# Consume from another repo (floating major tag `@v1` — see README):
+#
+#   permissions:
+#     contents: read
+#   jobs:
+#     validate-payload:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-payload.yml@v1
+#       with:
+#         skills: true        # this repo is a skills fan-out consumer
+#         coderabbit: true    # this repo is a CodeRabbit-config consumer
+
+on:
+  workflow_call:
+    inputs:
+      skills:
+        description: >-
+          Require a well-formed skills payload: every bundle under
+          `.claude/skills/**` (and the `.agents/skills/**` mirror, if present)
+          must ship a SKILL.md whose YAML frontmatter names the skill (`name:`),
+          and any `.claude/skills.lock` must be valid JSON. Version is NOT
+          required — meta bundles like `skill-creator` are legitimately
+          unversioned. A skills fan-out consumer sets this true so a broken
+          bundle (missing/empty SKILL.md) fails the check.
+        type: boolean
+        required: false
+        default: false
+      coderabbit:
+        description: >-
+          Require a parseable `.coderabbit.yaml` — the file must be present and
+          valid YAML. A CodeRabbit-config fan-out consumer sets this true.
+        type: boolean
+        required: false
+        default: false
+
+# Deny all token scopes at the workflow root; the job grants only contents:read.
+permissions: {}
+
+jobs:
+  validate-payload:
+    name: Validate fanned payload
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: 🚫 Validate check selection
+        # A caller that requires NEITHER payload would check out, validate nothing
+        # and exit green — the exact green-but-blind pass this check exists to
+        # prevent (A-445 / A-714). Fail fast before doing any work.
+        if: ${{ !inputs.skills && !inputs.coderabbit }}
+        run: |
+          echo "::error::validate-payload called with skills=false and coderabbit=false — nothing to validate. Set at least one to true, or drop the caller."
+          exit 1
+
+      - name: 🧩 Validate skills bundles
+        if: ${{ inputs.skills }}
+        env:
+          MIRRORS: ".claude/skills .agents/skills"
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+          import { join } from "node:path";
+
+          const mirrors = process.env.MIRRORS.split(" ").filter(Boolean);
+          const errors = [];
+          // Every bundle must ship a SKILL.md with a YAML frontmatter block that
+          // names the skill (`name:` — the one field the Agent Skills spec makes
+          // mandatory). A missing/empty/frontmatter-less SKILL.md is the signature
+          // of a broken vendor (e.g. an install that wrote only config.json — the
+          // A-745 failure). Version is NOT required: meta bundles like
+          // skill-creator / find-skills are legitimately unversioned.
+          const frontmatterRe = /^---\n([\s\S]*?)\n---/;
+          const nameRe = /^name:\s*\S/m;
+
+          let mirrorsSeen = 0;
+          for (const mirror of mirrors) {
+            if (!existsSync(mirror)) continue;
+            mirrorsSeen++;
+            const bundles = readdirSync(mirror, { withFileTypes: true })
+              .filter((e) => e.isDirectory())
+              .map((e) => e.name);
+            if (bundles.length === 0) {
+              errors.push(`${mirror}: no skill bundles present`);
+              continue;
+            }
+            for (const name of bundles) {
+              const skillMd = join(mirror, name, "SKILL.md");
+              if (!existsSync(skillMd)) {
+                errors.push(`${mirror}/${name}: missing SKILL.md`);
+                continue;
+              }
+              const text = readFileSync(skillMd, "utf8");
+              const frontmatter = frontmatterRe.exec(text)?.[1];
+              if (!frontmatter) {
+                errors.push(`${mirror}/${name}/SKILL.md: no YAML frontmatter`);
+                continue;
+              }
+              if (!nameRe.test(frontmatter)) {
+                errors.push(`${mirror}/${name}/SKILL.md: frontmatter has no \`name\``);
+              }
+            }
+          }
+
+          if (mirrorsSeen === 0) {
+            errors.push(
+              "skills=true but no skills mirror found (.claude/skills or .agents/skills) — the payload is absent",
+            );
+          }
+
+          // The lock, when present, must be valid JSON with a skills map.
+          const lock = ".claude/skills.lock";
+          if (existsSync(lock)) {
+            try {
+              const parsed = JSON.parse(readFileSync(lock, "utf8"));
+              if (!parsed || typeof parsed.skills !== "object" || !parsed.skills) {
+                errors.push(`${lock}: missing a \`skills\` object`);
+              }
+            } catch (error) {
+              errors.push(`${lock}: invalid JSON — ${error.message}`);
+            }
+          }
+
+          if (errors.length) {
+            for (const e of errors) console.error(`::error::skills payload — ${e}`);
+            console.error(`\n${errors.length} skills-payload problem(s).`);
+            process.exit(1);
+          }
+          console.log("skills payload OK — every bundle ships a named SKILL.md.");
+          NODE
+
+      - name: 🐰 Validate .coderabbit.yaml
+        if: ${{ inputs.coderabbit }}
+        run: |
+          set -euo pipefail
+          if [ ! -f .coderabbit.yaml ]; then
+            echo "::error::coderabbit=true but .coderabbit.yaml is absent — the payload is missing."
+            exit 1
+          fi
+          # A YAML parse IS the schema-parse gate A-738 asks for: an invalid document
+          # raises. Use python3 + PyYAML — both preinstalled on the ubuntu runner; a
+          # `pip install` fallback keeps the check from false-blocking a consumer if a
+          # future image ever drops PyYAML. (js-yaml's v4 CLI was removed and
+          # `npx -p js-yaml node` leaves the package unresolvable to `require` —
+          # MODULE_NOT_FOUND — so it is NOT a reliable parser here.)
+          python3 -c "import yaml" 2>/dev/null || pip install --quiet --disable-pip-version-check pyyaml
+          python3 - <<'PY'
+          import sys, yaml
+          try:
+              with open(".coderabbit.yaml") as f:
+                  yaml.safe_load(f)
+          except Exception as error:
+              print(f"::error::.coderabbit.yaml failed to parse — {error}", file=sys.stderr)
+              sys.exit(1)
+          print(".coderabbit.yaml OK — parses as YAML.")
+          PY
