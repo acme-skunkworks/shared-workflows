@@ -56,9 +56,11 @@ on:
         description: >-
           Require a well-formed skills payload: every bundle under
           `.claude/skills/**` (and the `.agents/skills/**` mirror, if present)
-          must ship a SKILL.md with a semver `metadata.version`, and any
-          `.claude/skills.lock` must be valid JSON. A skills fan-out consumer
-          sets this true so a broken bundle fails the check.
+          must ship a SKILL.md whose YAML frontmatter names the skill (`name:`),
+          and any `.claude/skills.lock` must be valid JSON. Version is NOT
+          required — meta bundles like `skill-creator` are legitimately
+          unversioned. A skills fan-out consumer sets this true so a broken
+          bundle (missing/empty SKILL.md) fails the check.
         type: boolean
         required: false
         default: false
@@ -180,16 +182,19 @@ jobs:
             exit 1
           fi
           # A YAML parse IS the schema-parse gate A-738 asks for: an invalid document
-          # throws. js-yaml is loaded programmatically (its v4 CLI was removed) and
-          # fetched by npx, so the check needs no runner-preinstalled YAML tool.
-          npx -y -p js-yaml node <<'NODE'
-          const yaml = require("js-yaml");
-          const { readFileSync } = require("node:fs");
-          try {
-            yaml.load(readFileSync(".coderabbit.yaml", "utf8"));
-          } catch (error) {
-            console.error(`::error::.coderabbit.yaml failed to parse — ${error.message}`);
-            process.exit(1);
-          }
-          console.log(".coderabbit.yaml OK — parses as YAML.");
-          NODE
+          # raises. Use python3 + PyYAML — both preinstalled on the ubuntu runner; a
+          # `pip install` fallback keeps the check from false-blocking a consumer if a
+          # future image ever drops PyYAML. (js-yaml's v4 CLI was removed and
+          # `npx -p js-yaml node` leaves the package unresolvable to `require` —
+          # MODULE_NOT_FOUND — so it is NOT a reliable parser here.)
+          python3 -c "import yaml" 2>/dev/null || pip install --quiet --disable-pip-version-check pyyaml
+          python3 - <<'PY'
+          import sys, yaml
+          try:
+              with open(".coderabbit.yaml") as f:
+                  yaml.safe_load(f)
+          except Exception as error:
+              print(f"::error::.coderabbit.yaml failed to parse — {error}", file=sys.stderr)
+              sys.exit(1)
+          print(".coderabbit.yaml OK — parses as YAML.")
+          PY
