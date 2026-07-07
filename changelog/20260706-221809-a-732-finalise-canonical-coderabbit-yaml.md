@@ -1,20 +1,20 @@
 ---
 title: Finalise the canonical .coderabbit.yaml with estate review settings
 release_note: The canonical .coderabbit.yaml is now a full estate standard (British-English review prose, a chill review profile, vendored/generated path filters and estate-policy path instructions) rather than just the skip-review denylist, ahead of its verbatim fan-out to consumers.
-created_at: "2026-07-06T22:18:09Z"
-merged_at:
+created_at: '2026-07-06T22:18:09Z'
+merged_at: '2026-07-06T22:29:29Z'
 branch: a-732-finalise-canonical-coderabbit-yaml
-pr:
-commit:
-merge_strategy:
+pr: 48
+commit: 34baaf5
+merge_strategy: squash
 category: chore
 breaking: false
 issues:
   - A-732
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 3
+  loc_added: 109
+  loc_removed: 7
   commits:
 ---
 

@@ -1,20 +1,20 @@
 ---
 title: Document the lint, build-test and pkg-release reusables in the README
 release_note: The README now lists all six reusable workflows and gives copy-ready caller stubs for reusable-lint.yml, reusable-build-test.yml and reusable-pkg-release.yml.
-created_at: "2026-07-06T11:17:02Z"
-merged_at:
+created_at: '2026-07-06T11:17:02Z'
+merged_at: '2026-07-06T11:35:36Z'
 branch: a-622-readme-document-the-remaining-reusables-lint-build-test-pkg
-pr:
-commit:
-merge_strategy:
+pr: 45
+commit: c062482
+merge_strategy: squash
 category: docs
 breaking: false
 issues:
   - A-622
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 2
+  loc_added: 145
+  loc_removed: 5
   commits:
 ---
 
