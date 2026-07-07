@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Claude Code reads only `CLAUDE.md`, so the `@AGENTS.md` line below imports the canonical shared
+block (which Cursor reads from `AGENTS.md` natively). Estate-wide guidance lives there;
+repo-specific guidance follows below.
+
+@AGENTS.md
+
 ## Repo
 
 Home for the Acme Skunkworks estate's **reusable GitHub Actions workflows**
@@ -12,19 +18,6 @@ This replaces the previous copy-paste-per-repo approach.
 The product is the `reusable-*.yml` files under `.github/workflows/`. Everything
 else (this repo's own `ci.yml`, the caller stubs, lint configs) exists to lint
 and dogfood them.
-
-## British English
-
-Write all prose in British English — code comments, documentation, commit
-messages, PR titles/bodies, and any user-facing strings.
-
-- **Spelling:** use British forms — _colour_, _behaviour_, _organisation_,
-  _licence_ (noun), _analyse_, _recognise_.
-- **Grammar/punctuation:** _whilst_/_amongst_ acceptable; single quotes for
-  quoting where appropriate.
-- **Scope vs. identifiers:** prose only. Do **not** apply it to identifiers,
-  action inputs, or third-party API field names that mirror upstream spelling
-  (e.g. `track_progress`, `paths-ignore`).
 
 ## Layout
 
