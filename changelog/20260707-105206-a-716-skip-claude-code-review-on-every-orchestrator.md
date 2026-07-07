@@ -26,6 +26,8 @@ stats:
   the CodeRabbit SaaS review and the Claude Code Review workflow, bringing Claude
   into parity with CodeRabbit's `!skip-review` denylist in the canonical
   `.coderabbit.yaml`.
+- `claude-code-review.yml` (the inline copy that reviews this repo's own PRs)
+  gains the same clause, kept in sync with the reusable per house style.
 - `CLAUDE.md` documents the cross-bot behaviour.
 
 This spares Claude review quota on the release-orchestrator's unattended,
