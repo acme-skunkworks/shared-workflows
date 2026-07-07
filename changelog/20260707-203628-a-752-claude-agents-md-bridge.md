@@ -5,7 +5,7 @@ category: docs
 breaking: false
 issues:
   - A-752
-created_at: 2026-07-07T20:36:28Z
+created_at: "2026-07-07T20:36:28Z"
 merged_at:
 commit:
 pr:
