@@ -69,10 +69,19 @@ jobs:
     # Dependabot secret store, not Actions secrets, so CLAUDE_CODE_OAUTH_TOKEN is
     # empty by design and the review can't authenticate — skip cleanly (neutral)
     # rather than conclude failure. Draft and release-please branches skip too.
+    #
+    # The `skip-review` label spares Claude on the release-orchestrator's
+    # unattended automation PRs — fan-out rollouts and changelog-enrichment PRs
+    # (A-716). These auto-merge and carry no new behaviour, so reviewing them only
+    # burns quota. This brings Claude into parity with CodeRabbit, which already
+    # honours the same label via the canonical `.coderabbit.yaml`'s
+    # `labels: ["!skip-review"]` denylist. It fails safe — a forgotten label means
+    # more review, not less.
     if: >-
       github.event.pull_request.draft == false &&
       !startsWith(github.head_ref, 'release-please--') &&
-      github.actor != 'dependabot[bot]'
+      github.actor != 'dependabot[bot]' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-review')
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout_minutes }}
     permissions:

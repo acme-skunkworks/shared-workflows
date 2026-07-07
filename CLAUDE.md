@@ -358,6 +358,16 @@ credential), **not** this repo, which has no cross-repo write capability by
 design. Agent-facing guidance for agents to apply the label will live in the
 estate's shared `AGENTS.md` once A-668 ships.
 
+#### Claude Code Review honours the same label (A-716)
+
+The `skip-review` label is cross-bot: `reusable-claude-code-review.yml`'s job
+`if:` also skips a PR carrying it (alongside its existing draft / `release-please--`
+/ dependabot skips). So a single label opts an automated PR out of **both** the
+CodeRabbit SaaS review and the Claude Code Review workflow. The
+`release-orchestrator` applies it to every automation PR it opens — fan-out
+rollouts and changelog-enrichment PRs alike — so neither bot spends quota on an
+unattended, auto-merging PR that carries no new behaviour.
+
 #### The canonical config is more than the denylist (A-732)
 
 Because A-712 fans `.coderabbit.yaml` out **verbatim** to every consumer flagged
