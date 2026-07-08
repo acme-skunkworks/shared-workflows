@@ -1,20 +1,20 @@
 ---
 title: Add a reusable fanned-payload validation check
-release_note: New reusable workflow reusable-validate-payload.yml — the fan-out estate's payload-exercising REQUIRED check. A skills consumer sets skills:true (every .claude/skills bundle must ship a named SKILL.md, and .claude/skills.lock must be valid JSON) and a CodeRabbit consumer sets coderabbit:true (.coderabbit.yaml must be present and parse). It closes the A-714 trap: the fan-out spine accepts mergeable_state unstable, so without a payload check a broken bundle stays green and merges (and, on octavo, deploys); this check turns that into blocked. Job name "Validate fanned payload", caller job id validate-payload, so the ruleset-pinnable context is "validate-payload / Validate fanned payload".
-created_at: "2026-07-07T17:58:21Z"
-merged_at:
+release_note: 'New reusable workflow reusable-validate-payload.yml — the fan-out estate''s payload-exercising REQUIRED check. A skills consumer sets skills:true (every .claude/skills bundle must ship a named SKILL.md, and .claude/skills.lock must be valid JSON) and a CodeRabbit consumer sets coderabbit:true (.coderabbit.yaml must be present and parse). It closes the A-714 trap: the fan-out spine accepts mergeable_state unstable, so without a payload check a broken bundle stays green and merges (and, on octavo, deploys); this check turns that into blocked. Job name "Validate fanned payload", caller job id validate-payload, so the ruleset-pinnable context is "validate-payload / Validate fanned payload".'
+created_at: '2026-07-07T17:58:21Z'
+merged_at: '2026-07-07T18:15:58Z'
 branch: a-738-provision-a-required-payload-exercising-check-on-every-fan
-pr:
-commit:
-merge_strategy:
+pr: 53
+commit: 28fc4ed
+merge_strategy: squash
 category: feature
 breaking: false
 issues:
   - A-738
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 2
+  loc_added: 245
+  loc_removed: 0
   commits:
 ---
 
