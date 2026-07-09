@@ -182,39 +182,39 @@ jobs:
         # Every lane except shellcheck (preinstalled binary) runs via pnpm, so
         # skip install only on a shellcheck-only run.
         if: ${{ inputs.build || inputs.typecheck || inputs.test || inputs.bats }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@eab5ceeef79f0b6cad10e6cb1a871ae4bcc37aa8 # v1.3.0
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
       - name: 🏗️ Build check
         if: ${{ inputs.build }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/build@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@eab5ceeef79f0b6cad10e6cb1a871ae4bcc37aa8 # v1.3.0
         with:
           script: ${{ inputs.build-script }}
 
       - name: 🔎 Typecheck
         if: ${{ inputs.typecheck }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/typecheck@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/typecheck@eab5ceeef79f0b6cad10e6cb1a871ae4bcc37aa8 # v1.3.0
         with:
           tsconfig: ${{ inputs.tsconfig }}
 
       - name: 🧪 Test (Vitest)
         if: ${{ inputs.test }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/test-vitest@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-vitest@eab5ceeef79f0b6cad10e6cb1a871ae4bcc37aa8 # v1.3.0
         with:
           args: ${{ inputs.test-args }}
           coverage: ${{ inputs.coverage }}
 
       - name: 🐚 ShellCheck
         if: ${{ inputs.shellcheck }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/shellcheck@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/shellcheck@eab5ceeef79f0b6cad10e6cb1a871ae4bcc37aa8 # v1.3.0
         with:
           paths: ${{ inputs.shellcheck-paths }}
           severity: ${{ inputs.shellcheck-severity }}
 
       - name: 🦇 Test (bats)
         if: ${{ inputs.bats }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/test-bats@7f543bef1ab799f22e059b9b7363585f8665e294 # v0.8.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-bats@eab5ceeef79f0b6cad10e6cb1a871ae4bcc37aa8 # v1.3.0
         with:
           paths: ${{ inputs.bats-paths }}
           recursive: ${{ inputs.bats-recursive }}
