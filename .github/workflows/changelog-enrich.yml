@@ -16,7 +16,7 @@ permissions: {}
 
 jobs:
   changelog-enrich:
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@a87a5ba1eaa9dea0b9fb87afebe47f1c92ea7455
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@80681b730868ffd99b78c7b1385d20c3c2f7f8dc
     with:
       mode: enrich
     permissions:
