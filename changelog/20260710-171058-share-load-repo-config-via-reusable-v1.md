@@ -1,10 +1,7 @@
 ---
 title: Share load-repo-config via reusable @v1
-release_note: >-
-  Consumers can float reusable-load-repo-config.yml@v1 instead of keeping a
-  duplicated local load-repo-config composite; the action is SHA-pinned inside
-  the reusable.
-created_at: "2026-07-10T17:10:58Z"
+release_note: Consumers can float reusable-load-repo-config.yml@v1 instead of keeping a duplicated local load-repo-config composite; the action is SHA-pinned inside the reusable.
+created_at: '2026-07-10T17:10:58Z'
 branch: a-779-move-load-repo-config-into-shared-workflows-reference-at-v1
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -12,6 +9,13 @@ category: feature
 breaking: false
 issues:
   - A-779
+merged_at: '2026-07-10T17:28:07Z'
+commit: 8506eca
+pr: 70
+stats:
+  loc_added: 270
+  loc_removed: 13
+  files_changed: 7
 ---
 
 ## Added
