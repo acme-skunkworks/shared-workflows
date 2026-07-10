@@ -25,6 +25,7 @@ and dogfood them.
 .github/
 ├── actions/                             # PRODUCT: Layer-1 composite actions (pick-and-mix)
 │   ├── setup-project/                   #   pnpm + Node-from-.nvmrc + store cache
+│   ├── load-repo-config/                #   repo-config.yaml → step outputs (A-779)
 │   ├── eslint/ lint-markdown/ lint-yaml/    #   lint mix-ins
 │   ├── build/ typecheck/ test-vitest/ test-bats/  #   build/test mix-ins
 │   ├── shellcheck/ changelog-validate/  #   infra/changelog mix-ins
@@ -36,6 +37,7 @@ and dogfood them.
 │   ├── reusable-lint.yml                # PRODUCT: coarse lint bundle (Layer 2)
 │   ├── reusable-build-test.yml          # PRODUCT: coarse build/test bundle (Layer 2)
 │   ├── reusable-pkg-release.yml         # PRODUCT: build-once → npm OIDC + Packages mirror (Layer 2)
+│   ├── reusable-load-repo-config.yml    # PRODUCT: load infrastructure/repo-config.yaml (Layer 2, A-779)
 │   ├── reusable-changelog-enrich.yml    # PRODUCT: post-merge changelog enrich/finalise (Layer 2, A-793)
 │   ├── reusable-validate-payload.yml    # PRODUCT: fan-out payload check (Layer 2)
 │   ├── changelog-enrich.yml             # self-host: post-merge enrich caller (A-800)
@@ -117,8 +119,9 @@ carries some unique rules:
   push and could publish a poisoned tarball with valid provenance (A-326).
 - **The two publish scripts are inlined** (not the consumer's per-repo
   `infrastructure/scripts/publish-*.sh`), centralising the logic and killing the
-  drift A-384 targets. The `load-repo-config` outputs the per-repo copy reads
-  (registries, scope, node-version file) become `with:` inputs instead.
+  drift A-384 targets. The `load-repo-config` outputs the caller stub reads
+  via `reusable-load-repo-config.yml@v1` (registries, scope, node-version file)
+  become `with:` inputs instead.
 - **Build reuses Layer-1** `setup-project` + `build`; the publish legs are
   hand-rolled (they need `setup-node`'s `registry-url`/`scope`) and pin
   `pnpm/action-setup` + `setup-node` to the **same SHAs** `setup-project` uses, so
@@ -140,8 +143,10 @@ workflow layer is not (a job each). So composability lives in the actions; the
 reusable workflows stay few and pay setup once. See `.github/actions/README.md`.
 
 - Each action takes plain `with:` inputs; in the reusable workflows those are
-  fed from each consumer's `repo-config.yaml` (the per-repo `load-repo-config`
-  stays local). Composite actions inherit the calling job's permissions.
+  fed from each consumer's `repo-config.yaml` via the caller's
+  `reusable-load-repo-config.yml@v1` job (A-779 — the composite is SHA-pinned
+  inside that reusable; consumers float the workflow, not the action).
+  Composite actions inherit the calling job's permissions.
 - `lint-yaml` injects **this repo's own** `.yamllint.yml` (resolved relative to
   `github.action_path`) so consumers carry no local copy (A-438). The root file
   stays the single source of truth — keep it in sync, don't fork a copy.

@@ -62,8 +62,10 @@ The four in-scope repos are **single-package** libraries that already converge h
 - **CI skeleton:** near-identical `ci.yml` — `🔬 Build & Lint` (build + eslint + markdown +
   changelog validation) · `Validate PR title is a Conventional Commit` · `📝 YAML & Workflows`
   (yamllint + actionlint) · `🧪 Infrastructure scripts` (shellcheck + vitest + bats).
-- **Shared apparatus:** a local `load-repo-config` action reading a per-repo `repo-config.yaml`;
-  exact-key (no `restore-keys`) caches for `yamllint`/`actionlint`/`bats` to defeat stale hits.
+- **Shared apparatus:** `repo-config.yaml` per repo, loaded via
+  `reusable-load-repo-config.yml@v1` (A-779; previously a duplicated local
+  composite); exact-key (no `restore-keys`) caches for `yamllint`/`actionlint`/`bats`
+  to defeat stale hits.
 - **Divergence is small and legitimate:** `markdownlint-config` has no build artefact (the config
   _is_ the package); `agent-skills` adds a hard `validate:skills` metadata gate and ships
   unbuilt bundles.
@@ -178,17 +180,18 @@ repo's own Actions (D5).
 │    ├─ <local extra jobs, e.g. validate:skills>                     │
 │    └─ go-no-go: needs:[all of the above]  if: always()  ← THE GATE │
 │  .github/workflows/pkg-release.yml      ← caller stub (pkg release)│
-│  repo-config.yaml + load-repo-config (stays local)                 │
+│  repo-config.yaml (per-repo) + reusable-load-repo-config@v1 (A-779)│
 └────────────────────────────────────────────────────────────────────┘
-        │ cross-repo, SHA-pinned, Dependabot-bumped
+        │ cross-repo; workflows float @v1; actions SHA-pinned inside
         ▼
 ┌─ acme-skunkworks/shared-workflows ─────────────────────────────────┐
 │  Layer 2 — reusable workflows (on: workflow_call)                   │
 │    reusable-lint.yml (A-415) · reusable-build-test.yml (A-416)    │
 │    reusable-validate-pr-title.yml (A-403, shipped)                 │
 │    reusable-pkg-release.yml (A-417) · reusable-claude*.yml (shipped)│
+│    reusable-load-repo-config.yml (A-779)                           │
 │  Layer 1 — composite actions (action.yml)                          │
-│    setup-project (pnpm + Node-from-.nvmrc + caches)                │
+│    setup-project · load-repo-config (A-779) · …                    │
 │  Governance — versioned estate rulesets JSON (A-425)              │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -334,8 +337,10 @@ actions" → "promote to its own check".
 
 ### Neutral
 
-- Per-repo `repo-config.yaml` + `load-repo-config` **stay local** (A-411) — values reach the shared
-  workflows via `with:` inputs, not by centralising the config.
+- Per-repo `repo-config.yaml` stays local; the loader is shared via
+  `reusable-load-repo-config.yml@v1` (A-779 — revises the earlier A-411 "stays
+  local" stance for the composite only). Values still reach other reusables via
+  `with:` inputs from the caller's `config` job.
 - Monorepos and the app keep their bespoke CI until a monorepo tier is actually built (§8).
 
 ---
@@ -471,8 +476,9 @@ None of these block the workflow rollout, but centralising yamllint (A-438) and 
   standing tension: Octavo is moving its IPv6/Supabase typegen to **CircleCI**, yet its **gate stays
   on GitHub Actions** with CircleCI as a bounded-poll input. The orchestrator never depends on
   CircleCI.
-- **`load-repo-config` home.** Stays local per A-411; revisit only if a security-review (A-422)
-  argues for centralising the registry-URL validation.
+- **`load-repo-config` home.** Resolved by A-779: the composite lives in
+  `shared-workflows` and is consumed via `reusable-load-repo-config.yml@v1`
+  (action SHA-pinned inside the reusable). `repo-config.yaml` remains per-repo.
 - **Orchestrator latency.** Independent of this ADR but adjacent: release-orchestrator ADR 0001
   proposes replacing the 15-min cron poll with an external Cloudflare trigger + App webhook. If
   adopted, the gate's pass signal could be consumed faster — no change required here.

@@ -1,0 +1,79 @@
+name: Reusable / Load repo config
+
+# Reusable (workflow_call) version of the estate's `load-repo-config` composite
+# (A-779). Consumers previously kept a byte-identical local copy under
+# `.github/actions/load-repo-config` and invoked it from a thin `config` job;
+# that third category of shared content was kept in sync by nothing but manual
+# discipline. This workflow folds the loader into the same `@v1` pull model as
+# the other reusables.
+#
+# The composite action is SHA-pinned here (org `sha_pinning_required` forbids a
+# floating tag on true actions). Consumers float this *workflow* at `@v1`, so
+# loader fixes arrive without a per-repo action-SHA bump — the same pattern as
+# `setup-project` living behind `reusable-lint.yml`.
+#
+# The action reads the *caller's* `infrastructure/repo-config.yaml` via
+# `$GITHUB_WORKSPACE` after checkout (composite actions from another repo still
+# run against the caller's workspace).
+#
+# REQUIRED CALLER PERMISSIONS (A-621): under the org default read-only token this
+# job needs only `contents: read`. Declare it on the calling job (a top-level
+# `permissions:` block resets every other scope to none).
+#
+# Consume from another repo (floating major tag `@v1` — see README):
+#
+#   jobs:
+#     config:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-load-repo-config.yml@v1
+#       permissions:
+#         contents: read
+#     lint:
+#       needs: config
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-lint.yml@v1
+#       with:
+#         node-version-file: ${{ needs.config.outputs.node_version_file }}
+
+on:
+  workflow_call:
+    outputs:
+      default_branch:
+        description: Canonical default branch name (mirrors workflows' static triggers where applicable).
+        value: ${{ jobs.load.outputs.default_branch }}
+      node_version_file:
+        description: Path passed to actions/setup-node node-version-file.
+        value: ${{ jobs.load.outputs.node_version_file }}
+      npm_registry_url:
+        description: Public npm registry URL.
+        value: ${{ jobs.load.outputs.npm_registry_url }}
+      npm_scope:
+        description: npm scope for the published package (must equal the owning GitHub org for GitHub Packages).
+        value: ${{ jobs.load.outputs.npm_scope }}
+      github_packages_registry_url:
+        description: GitHub Packages npm registry URL (secondary publish target, ASW-323).
+        value: ${{ jobs.load.outputs.github_packages_registry_url }}
+
+# Deny all token scopes at the workflow root; the job grants only contents:read.
+permissions: {}
+
+jobs:
+  load:
+    name: Load repo config
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      default_branch: ${{ steps.repo.outputs.default_branch }}
+      node_version_file: ${{ steps.repo.outputs.node_version_file }}
+      npm_registry_url: ${{ steps.repo.outputs.npm_registry_url }}
+      npm_scope: ${{ steps.repo.outputs.npm_scope }}
+      github_packages_registry_url: ${{ steps.repo.outputs.github_packages_registry_url }}
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: ⚙️ Load repo config
+        id: repo
+        uses: acme-skunkworks/shared-workflows/.github/actions/load-repo-config@ab96ef26d26a88ee3f8125b7446bffc2277d6207 # A-779
