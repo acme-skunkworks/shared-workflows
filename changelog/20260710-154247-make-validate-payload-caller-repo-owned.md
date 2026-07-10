@@ -1,24 +1,20 @@
 ---
 title: Make validate-payload caller repo-owned
-release_note: >-
-  The dogfood validate-payload.yml caller is now repo-owned onboarding state
-  (A-780), pinned at @v1 — not overwritten by the release-orchestrator fan-out.
-  Consumers place the stub once; Dependabot owns bumps. Enables revoking
-  workflows:write from road-runner-bot.
-created_at: "2026-07-10T15:42:47Z"
-merged_at:
+release_note: The dogfood validate-payload.yml caller is now repo-owned onboarding state (A-780), pinned at @v1 — not overwritten by the release-orchestrator fan-out. Consumers place the stub once; Dependabot owns bumps. Enables revoking workflows:write from road-runner-bot.
+created_at: '2026-07-10T15:42:47Z'
+merged_at: '2026-07-10T15:53:29Z'
 branch: a-780-make-validate-payload-repo-owned-one-time-onboarding-revoke
-pr:
-commit:
+pr: 68
+commit: d7fc7f5
 merge_strategy:
 category: chore
 breaking: false
 issues:
   - A-780
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 4
+  loc_added: 49
+  loc_removed: 10
   commits:
 ---
 
