@@ -142,8 +142,9 @@ jobs:
           private-key: ${{ secrets.ROADRUNNER_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
+          # contents only — PR resolve uses github.token; do not widen the App
+          # token's blast radius with unused pull-requests write.
           permission-contents: write
-          permission-pull-requests: write
 
       - name: 🛎️ Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -258,6 +259,10 @@ jobs:
 
       - name: 🏷️ Finalise (version stamp on release cut)
         id: finalise
+        # Not gated on steps.pr.outputs.found — a road-runner-bot re-fire has no
+        # associated PR, so enrich no-ops, but finalise may still run. Safe:
+        # changelog-core finalise is idempotent and the push step's
+        # git diff --cached --quiet short-circuits when nothing changed.
         if: inputs.mode == 'finalise'
         env:
           GH_TOKEN: ${{ github.token }}
