@@ -23,6 +23,7 @@ release gate pattern).
 | `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate (Layer 2). | — (uses `GITHUB_TOKEN`)   |
 | `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
 | `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
+| `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).       | — (uses `GITHUB_TOKEN`)   |
 
 > **Why `reusable-` prefixes?** It lets a consumer repo (and this repo, which
 > dogfoods its own workflows) keep a same-named caller stub — e.g. `claude.yml`
@@ -62,6 +63,7 @@ job requests:
 | `reusable-claude.yml`             | `contents: read`, `pull-requests: read`, `issues: read`, `id-token: write`, `actions: read`     |
 | `reusable-claude-code-review.yml` | `contents: read`, `pull-requests: write`, `issues: read`, `id-token: write`                     |
 | `reusable-pkg-release.yml`        | `contents: write`, `id-token: write`, `issues: write`, `packages: write`, `attestations: write` |
+| `reusable-changelog-enrich.yml`   | `contents: write`, `pull-requests: read`                                                        |
 
 `id-token: write` is **required**, not optional, on both Claude workflows —
 claude-code-action exchanges an OIDC token for its short-lived GitHub token, so
@@ -289,6 +291,67 @@ auto-creates it **unprotected**, losing the ref gate (A-326). There is **no**
 `npm-scope` is the only required input; a build-less package (config- or
 bundle-only, no `build` script) passes `build: false`. Other notable inputs:
 `node-version-file`, `publish-github-packages`, `changelog-dir` and `tag-prefix`.
+
+### `reusable-changelog-enrich.yml`
+
+Post-merge fill of dated `changelog/` entries via
+[`@acme-skunkworks/changelog-core`](https://www.npmjs.com/package/@acme-skunkworks/changelog-core)
+(A-793). Resolves the just-merged PR from the push SHA, runs `enrich` and
+(optionally) `finalise`, then pushes **only** `changelog/**` with the repo's
+own `GITHUB_TOKEN`. Requires a `changelog/**`-scoped ruleset bypass for the
+repo's Actions identity (A-794) before the write-back can land on protected
+`main`.
+
+**Consumer prerequisite:** add `@acme-skunkworks/changelog-core` as a
+devDependency so `pnpm exec changelog-core` resolves from the lockfile.
+
+#### Deploy targets (`mode: enrich`)
+
+```yaml
+# .github/workflows/changelog-enrich.yml
+name: Changelog enrich
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: changelog-enrich-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  changelog-enrich:
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@v1
+    with:
+      mode: enrich
+```
+
+#### npm targets (`mode: finalise`)
+
+Add a sibling job alongside the `pkg-release.yml` caller so it inherits that
+workflow's concurrency group. `finalise` enriches the associated PR on every
+merge and stamps `version` only when `package.json`'s version has no matching
+git tag (a release-please cut):
+
+```yaml
+# Extra job in .github/workflows/pkg-release.yml (alongside `release:`)
+changelog-enrich:
+  uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@v1
+  with:
+    mode: finalise
+  permissions:
+    contents: write
+    pull-requests: read
+```
+
+`pull-requests: read` is required for the commits→pulls resolution API — the
+A-793 "contents: write only" constraint means no publish scopes (`id-token` /
+`packages` / `attestations`), not blindness to PRs. Other inputs:
+`node-version-file` (default `.nvmrc`) and `changelog-dir` (default `changelog`).
 
 ## Versioning
 

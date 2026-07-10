@@ -36,6 +36,8 @@ and dogfood them.
 │   ├── reusable-lint.yml                # PRODUCT: coarse lint bundle (Layer 2)
 │   ├── reusable-build-test.yml          # PRODUCT: coarse build/test bundle (Layer 2)
 │   ├── reusable-pkg-release.yml         # PRODUCT: build-once → npm OIDC + Packages mirror (Layer 2)
+│   ├── reusable-changelog-enrich.yml    # PRODUCT: post-merge changelog enrich/finalise (Layer 2, A-793)
+│   ├── reusable-validate-payload.yml    # PRODUCT: fan-out payload check (Layer 2)
 │   ├── claude.yml                       # self-host: inline @claude on THIS repo
 │   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
 │   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
@@ -267,9 +269,9 @@ This repo runs the shared **`changelog`** flow (A-597): the `changelog` skill is
 installed, `send-it` authors a dated `changelog/` entry per branch
 (`changelog: true` in its `config.json`), and CI validates entries against the
 contract via the `📓 Changelog` job in the `GO/NO GO` aggregator. Post-merge
-enrichment (filling `merged_at` / `commit` / `stats`) is **not yet wired** — that
-is the estate-wide deploy-target enrichment build (A-597 Layer B); until it lands
-those fields stay blank, exactly as on octavo today.
+enrichment lives in `reusable-changelog-enrich.yml` (A-793) — consumers call it
+with their own `GITHUB_TOKEN`. This repo's caller + ruleset bypass land with the
+deploy rollout (A-800 / A-794); until then those fields stay blank here.
 
 ## Linting and formatting
 
