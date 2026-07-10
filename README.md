@@ -301,12 +301,18 @@ auto-detected. The job name is `Validate fanned payload`; callers **must** use
 the job id `validate-payload` so the ruleset-pinnable context is
 `validate-payload / Validate fanned payload`.
 
+The caller stub is **repo-owned** (A-780): place it once at onboarding (copy
+below), pin `@v1` (or let Dependabot bump a SHA), and make the status context
+required on `main`. The release-orchestrator does **not** vendor or refresh this
+file.
+
 ```yaml
 # .github/workflows/validate-payload.yml
 name: Validate fanned payload
 
 on:
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
