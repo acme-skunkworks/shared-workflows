@@ -1,21 +1,22 @@
 ---
-title: "Roll out in-repo post-merge changelog enricher"
-release_note: "shared-workflows now fills post-merge changelog metadata in-repo via changelog-enrich.yml (mode: enrich, secrets: inherit), adopting @acme-skunkworks/changelog-core and dropping the cron-era changelog:enrich script."
-created_at: "2026-07-10T14:27:59Z"
-merged_at:
-branch: "a-800-phase-3-roll-out-in-repo-enricher-to-shared-workflows-deploy"
-pr:
-commit:
+title: Roll out in-repo post-merge changelog enricher
+release_note: 'shared-workflows now fills post-merge changelog metadata in-repo via changelog-enrich.yml (mode: enrich, secrets: inherit), adopting @acme-skunkworks/changelog-core and dropping the cron-era changelog:enrich script.'
+created_at: '2026-07-10T14:27:59Z'
+merged_at: '2026-07-10T14:40:50Z'
+branch: a-800-phase-3-roll-out-in-repo-enricher-to-shared-workflows-deploy
+pr: 66
+commit: 48dd44a
 merge_strategy:
-author: "rob@acmeskunkworks.io"
+author: rob@acmeskunkworks.io
 co_authors: []
 category: chore
 breaking: false
-issues: ["A-800"]
+issues:
+  - A-800
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 6
+  loc_added: 87
+  loc_removed: 7
   commits:
 ---
 
