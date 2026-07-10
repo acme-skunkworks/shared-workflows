@@ -1,6 +1,6 @@
 ---
 title: Document repo-owned .coderabbit.yaml after fan-out removal
-release_note: `.coderabbit.yaml` is now documented as repo-owned (A-778 removed the estate fan-out); this repo's copy remains the estate reference profile.
+release_note: '`.coderabbit.yaml` is now documented as repo-owned (A-778 removed the estate fan-out); this repo''s copy remains the estate reference profile.'
 created_at: '2026-07-10T15:51:40Z'
 branch: a-778-remove-the-coderabbityaml-fan-out-from-fanout-configyml
 author: rob@acmeskunkworks.io
@@ -9,6 +9,13 @@ category: docs
 breaking: false
 issues:
   - A-778
+merged_at: '2026-07-10T16:30:36Z'
+commit: 6ca109f
+pr: 69
+stats:
+  loc_added: 31
+  loc_removed: 11
+  files_changed: 3
 ---
 
 ## Changed
