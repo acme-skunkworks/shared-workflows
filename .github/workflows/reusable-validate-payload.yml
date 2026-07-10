@@ -16,8 +16,9 @@ name: Reusable / Validate fanned payload
 # check that silently skips an absent payload is the same green-but-blind hole it
 # exists to close. A skills consumer sets `skills: true` (the bundle MUST be
 # present and well-formed); a CodeRabbit consumer sets `coderabbit: true` (the
-# config MUST be present and parse). The release-orchestrator's caller-file
-# adapter stamps these from each repo's fleet.json profile.
+# config MUST be present and parse). The caller stub is **repo-owned** one-time
+# onboarding state (A-780) — not fanned by the orchestrator; set the inputs from
+# the repo's install profile when placing the stub.
 #
 # STATUS-CHECK CONTEXT: the job below is named `Validate fanned payload` — the
 # estate-canonical string a single required-check rule pins across every consumer.
