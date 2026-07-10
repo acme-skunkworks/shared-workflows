@@ -23,6 +23,7 @@ release gate pattern).
 | `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate (Layer 2). | — (uses `GITHUB_TOKEN`)   |
 | `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
 | `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
+| `reusable-load-repo-config.yml`   | Load + allowlist-validate `infrastructure/repo-config.yaml` → job outputs (Layer 2, A-779).   | — (uses `GITHUB_TOKEN`)   |
 | `reusable-validate-payload.yml`   | Fan-out payload check — skills bundles and/or `.coderabbit.yaml` (Layer 2).                   | — (uses `GITHUB_TOKEN`)   |
 | `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).       | `ROADRUNNER_PRIVATE_KEY`  |
 
@@ -64,6 +65,7 @@ job requests:
 | `reusable-claude.yml`             | `contents: read`, `pull-requests: read`, `issues: read`, `id-token: write`, `actions: read`     |
 | `reusable-claude-code-review.yml` | `contents: read`, `pull-requests: write`, `issues: read`, `id-token: write`                     |
 | `reusable-pkg-release.yml`        | `contents: write`, `id-token: write`, `issues: write`, `packages: write`, `attestations: write` |
+| `reusable-load-repo-config.yml`   | `contents: read`                                                                                |
 | `reusable-validate-payload.yml`   | `contents: read`                                                                                |
 | `reusable-changelog-enrich.yml`   | `contents: read`, `pull-requests: read`                                                         |
 
@@ -293,6 +295,31 @@ auto-creates it **unprotected**, losing the ref gate (A-326). There is **no**
 `npm-scope` is the only required input; a build-less package (config- or
 bundle-only, no `build` script) passes `build: false`. Other notable inputs:
 `node-version-file`, `publish-github-packages`, `changelog-dir` and `tag-prefix`.
+
+### `reusable-load-repo-config.yml`
+
+Loads and allowlist-validates the caller's `infrastructure/repo-config.yaml`
+into job outputs (A-779). Prefer this over a local `.github/actions/load-repo-config`
+copy — the composite is SHA-pinned inside the reusable; consumers float `@v1`.
+
+```yaml
+# .github/workflows/ci.yml (excerpt)
+jobs:
+  config:
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-load-repo-config.yml@v1
+    permissions:
+      contents: read
+
+  lint:
+    needs: config
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-lint.yml@v1
+    with:
+      node-version-file: ${{ needs.config.outputs.node_version_file }}
+```
+
+Outputs: `default_branch`, `node_version_file`, `npm_registry_url`, `npm_scope`,
+`github_packages_registry_url`. Callers map only the subset their downstream
+jobs need.
 
 ### `reusable-validate-payload.yml`
 
