@@ -366,12 +366,13 @@ CodeRabbit SaaS review and the Claude Code Review workflow. The
 rollouts and changelog-enrichment PRs alike — so neither bot spends quota on an
 unattended, auto-merging PR that carries no new behaviour.
 
-#### The canonical config is more than the denylist (A-732)
+#### The estate review profile is more than the denylist (A-732 / A-778)
 
-Because A-712 fans `.coderabbit.yaml` out **verbatim** to every consumer flagged
-`coderabbit: true`, this file is the estate's single source of truth and must be a
-**strict superset** of every skip convention — anything omitted reverts that
-consumer to CodeRabbit's own defaults. Beyond the `skip-review` denylist it carries:
+`.coderabbit.yaml` is **repo-owned** (A-778 removed the verbatim fan-out). This
+repo's copy is the estate reference profile; consumers carry their own identical
+(or deliberately drifted) copies. Keep this file a **strict superset** of every
+skip convention — anything omitted reverts a consumer that re-syncs from it to
+CodeRabbit's own defaults. Beyond the `skip-review` denylist it carries:
 
 - **`language: "en-GB"`** — review prose in British English, matching house style.
 - **`reviews.profile: "chill"`** — a balanced signal-to-noise default (fewer
