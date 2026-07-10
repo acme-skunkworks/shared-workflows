@@ -27,6 +27,6 @@ stats:
 **Repo-owned `validate-payload.yml`** — drop the VENDORED fan-out header, pin
 the reusable at `@v1`, and document in the README that consumers place this
 caller once at onboarding ([A-780](https://linear.app/acme-skunkworks/issue/A-780)). The status context
-`validate-payload / Validate fanned payload` is unchanged so existing rulesets
+`validate-payload / Validate fanned payload` is unchanged, so existing rulesets
 keep matching. The release-orchestrator no longer vendors this file; that lets
 `road-runner-bot` drop `workflows: write`.
