@@ -269,9 +269,11 @@ This repo runs the shared **`changelog`** flow (A-597): the `changelog` skill is
 installed, `send-it` authors a dated `changelog/` entry per branch
 (`changelog: true` in its `config.json`), and CI validates entries against the
 contract via the `📓 Changelog` job in the `GO/NO GO` aggregator. Post-merge
-enrichment lives in `reusable-changelog-enrich.yml` (A-793) — consumers call it
-with their own `GITHUB_TOKEN`. This repo's caller + ruleset bypass land with the
-deploy rollout (A-800 / A-794); until then those fields stay blank here.
+enrichment lives in `reusable-changelog-enrich.yml` (A-793 / A-821) — consumers
+call it with `secrets: inherit` so the job can mint a road-runner-bot
+installation token and push `changelog/**` (ADR 0004; Actions cannot be a Trunk
+bypass actor). This repo's caller lands with the deploy rollout (A-800); until
+then those fields stay blank here.
 
 ## Linting and formatting
 
