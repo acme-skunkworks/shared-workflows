@@ -1,10 +1,10 @@
-# CodeRabbit configuration — the estate's canonical source of truth (A-667 / A-732).
+# CodeRabbit configuration — the estate's reference copy (A-667 / A-732 / A-778).
 #
-# The release-orchestrator fans this file out *verbatim* to every consumer flagged
-# `coderabbit: true` (A-712), so it becomes each repo's entire CodeRabbit config:
-# anything omitted here reverts that consumer to CodeRabbit's own defaults. Keep it a
-# strict superset of every estate skip convention so a fan-out never re-reviews a PR
-# that one repo already silences.
+# Consumers own their own `.coderabbit.yaml` (A-778 removed the fan-out). This file
+# remains the shared-workflows reference and the historical source of the estate
+# profile: keep it a strict superset of every estate skip convention so a hand
+# re-sync never re-reviews a PR that one repo already silences. Anything omitted
+# reverts a consumer that copies it to CodeRabbit's own defaults.
 
 # Review prose in British English, matching the estate's house style.
 language: "en-GB"
