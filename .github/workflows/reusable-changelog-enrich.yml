@@ -1,0 +1,295 @@
+name: Reusable / Changelog enrich
+
+# Reusable (workflow_call) post-merge changelog enricher (A-793).
+#
+# Thin CI wrapper around `@acme-skunkworks/changelog-core` — the package is the
+# single source of truth for enrich/finalise logic. This workflow does NOT
+# re-implement field transforms and does NOT depend on a committed or global
+# changelog skill (A-781).
+#
+# Trigger semantics (A-777): keyed to the feature PR's merge. Callers fire on
+# `push: [main]`; this job resolves the just-merged PR (merge commit →
+# associated PR), finds the dated entry by its `branch:` field, and fills the
+# post-merge metadata via env vars. Never `pull_request_target`.
+#
+# Modes:
+#   enrich   — deploy targets. Resolve PR → `changelog-core enrich`. No version.
+#   finalise — npm targets (piggyback on pkg-release.yml). Always enrich the
+#              associated PR when present; run `changelog-core finalise` ONLY
+#              when package.json's version has no matching git tag (release-
+#              please cut) so feature merges are not stamped with the previous
+#              version.
+#
+# Write-back: direct push to main of `changelog/**` only, as github-actions[bot],
+# with rebase-retry. Requires the per-repo `changelog/**`-scoped ruleset bypass
+# (A-794) — without it the push is rejected by branch protection. A GITHUB_TOKEN
+# push does not re-fire workflows (no recursion / no loop).
+#
+# CONCURRENCY lives in the CALLER (A-621 forbids top-level concurrency here):
+#   deploy — group: changelog-enrich-${{ github.ref }}, cancel-in-progress: false
+#   npm    — inherit pkg-release.yml's group
+#
+# REQUIRED CALLER PERMISSIONS (A-621): under the org default read-only token the
+# caller MUST declare the scopes below or the run dies at compile time with a
+# `startup_failure`. `pull-requests: read` is required for the commits→pulls
+# resolution API; A-793's "contents: write only" means no publish scopes
+# (id-token / packages / attestations), not blindness to PRs.
+#
+# Consumer prerequisite: pin `@acme-skunkworks/changelog-core` as a
+# devDependency so `pnpm exec changelog-core` resolves from the lockfile.
+#
+# Consume from another repo (floating major tag `@v1` — see README):
+#
+#   # Deploy — dedicated workflow
+#   name: Changelog enrich
+#   on:
+#     push:
+#       branches: [main]
+#   concurrency:
+#     group: changelog-enrich-${{ github.ref }}
+#     cancel-in-progress: false
+#   permissions:
+#     contents: write
+#     pull-requests: read
+#   jobs:
+#     changelog-enrich:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@v1
+#       with:
+#         mode: enrich
+#
+#   # npm — sibling job in pkg-release.yml (inherits that workflow's concurrency)
+#   changelog-enrich:
+#     uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@v1
+#     with:
+#       mode: finalise
+#     permissions:
+#       contents: write
+#       pull-requests: read
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: >-
+          `enrich` (deploy targets — post-merge metadata only) or `finalise`
+          (npm targets — enrich every merge; stamp version only on an untagged
+          package.json version / release-please cut).
+        type: string
+        required: true
+      node-version-file:
+        description: File to read the Node version from (passed to setup-node).
+        type: string
+        required: false
+        default: .nvmrc
+      changelog-dir:
+        description: >-
+          Directory of dated changelog entries. Write-back stages only paths
+          under this directory.
+        type: string
+        required: false
+        default: changelog
+
+# Deny all token scopes at the workflow root; the job grants the least privilege
+# needed for resolve + push.
+permissions: {}
+
+jobs:
+  changelog-enrich:
+    name: Enrich changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # Checkout + push enriched changelog/** only
+      pull-requests: read # commits/{sha}/pulls + gh pr view fields
+    env:
+      HUSKY: 0
+      CHANGELOG_DIR: ${{ inputs.changelog-dir }}
+      MODE: ${{ inputs.mode }}
+    steps:
+      - name: 🚫 Validate mode
+        run: |
+          set -euo pipefail
+          case "$MODE" in
+            enrich|finalise) ;;
+            *)
+              echo "::error::mode must be 'enrich' or 'finalise' (got '$MODE')"
+              exit 1
+              ;;
+          esac
+
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Full history + tags so the finalise path's version-vs-tag gate can
+          # resolve (mirrors reusable-pkg-release.yml). persist-credentials
+          # stays true (default) so the write-back push can use GITHUB_TOKEN.
+          fetch-depth: 0
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4.4.0
+        with:
+          run_install: false
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: pnpm
+
+      # A-793: --frozen-lockfile --ignore-scripts. setup-project has no
+      # ignore-scripts input, so install is inlined here (same SHA-pinned
+      # toolchain as the pkg-release publish legs).
+      - name: 📥 Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: 🔎 Resolve associated PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Merge commit → associated PR (A-777). Prefer the first merged PR;
+          # a push with no associated PR (direct push, bot commit) is a clean
+          # no-op for enrich.
+          pulls_json="$(gh api \
+            "repos/${{ github.repository }}/commits/${MERGE_SHA}/pulls" \
+            -H "Accept: application/vnd.github+json")"
+          count="$(printf '%s' "$pulls_json" | jq 'length')"
+          if [ "$count" -eq 0 ]; then
+            echo "No associated PR for ${MERGE_SHA:0:7} — enrich will no-op."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Prefer a merged PR; fall back to the first association.
+          pr_json="$(printf '%s' "$pulls_json" | jq -c '
+            (map(select(.merged_at != null)) | .[0]) // .[0]
+          ')"
+          number="$(printf '%s' "$pr_json" | jq -r '.number')"
+          # commits/{sha}/pulls returns a slim PR object; fetch full fields for
+          # stats + head ref via gh (env-bound, never shell-interpolated into
+          # the changelog-core argv).
+          full="$(gh pr view "$number" --repo "${{ github.repository }}" \
+            --json number,mergedAt,additions,deletions,changedFiles,mergeCommit,headRefName)"
+
+          merged_at="$(printf '%s' "$full" | jq -r '.mergedAt // empty')"
+          branch="$(printf '%s' "$full" | jq -r '.headRefName // empty')"
+          merge_sha="$(printf '%s' "$full" | jq -r '.mergeCommit.oid // empty')"
+          if [ -z "$merge_sha" ]; then
+            merge_sha="$MERGE_SHA"
+          fi
+          additions="$(printf '%s' "$full" | jq -r '.additions // empty')"
+          deletions="$(printf '%s' "$full" | jq -r '.deletions // empty')"
+          changed_files="$(printf '%s' "$full" | jq -r '.changedFiles // empty')"
+
+          if [ -z "$branch" ]; then
+            echo "Associated PR #$number has no head ref — enrich will no-op."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "found=true"
+            echo "branch=$branch"
+            echo "pr_number=$number"
+            echo "merged_at=$merged_at"
+            echo "merge_sha=$merge_sha"
+            echo "additions=$additions"
+            echo "deletions=$deletions"
+            echo "changed_files=$changed_files"
+          } >> "$GITHUB_OUTPUT"
+          echo "Resolved PR #$number branch=$branch sha=${merge_sha:0:7}"
+
+      - name: 📝 Enrich changelog entry
+        id: enrich
+        if: steps.pr.outputs.found == 'true'
+        env:
+          GH_TOKEN: ""
+          BRANCH_NAME: ${{ steps.pr.outputs.branch }}
+          MERGED_AT: ${{ steps.pr.outputs.merged_at }}
+          MERGE_SHA: ${{ steps.pr.outputs.merge_sha }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          ADDITIONS: ${{ steps.pr.outputs.additions }}
+          DELETIONS: ${{ steps.pr.outputs.deletions }}
+          CHANGED_FILES: ${{ steps.pr.outputs.changed_files }}
+        run: |
+          set -euo pipefail
+          # Env-var interface into changelog-core — never interpolate values
+          # into the argv (A-793). Missing entry / already-filled → exit 0.
+          if [ -z "${MERGED_AT:-}" ] || [ -z "${MERGE_SHA:-}" ]; then
+            echo "PR metadata incomplete (merged_at/merge_sha) — skipping enrich."
+            exit 0
+          fi
+          pnpm exec changelog-core enrich
+
+      - name: 🏷️ Finalise (version stamp on release cut)
+        id: finalise
+        if: inputs.mode == 'finalise'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_PREFIX: v
+        run: |
+          set -euo pipefail
+          # Same keyless gate as reusable-pkg-release.yml: stamp version iff
+          # package.json's version has no matching git tag yet. Feature merges
+          # keep the previous version tagged → skip finalise so entries are not
+          # stamped early with the wrong version.
+          version="$(node -p "require('./package.json').version")"
+          tag="${TAG_PREFIX}${version}"
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Tag $tag exists — not a release cut; skipping finalise."
+            exit 0
+          fi
+          echo "Untagged version $version (tag $tag missing) — running finalise."
+          # Surface VERSION for operators / future CLI use; finalise today reads
+          # package.json directly (changelog-core).
+          export VERSION="$version"
+          pnpm exec changelog-core finalise
+
+      - name: 📤 Commit and push changelog/**
+        env:
+          CHANGELOG_DIR: ${{ inputs.changelog-dir }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Stage ONLY the changelog directory — never the rest of the tree.
+          if [ ! -d "$CHANGELOG_DIR" ]; then
+            echo "No $CHANGELOG_DIR/ directory — nothing to push."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$CHANGELOG_DIR"
+          if git diff --cached --quiet; then
+            echo "No changelog changes — nothing to push."
+            exit 0
+          fi
+          git commit -m "chore(changelog): enrich post-merge metadata"
+
+          # Rebase-retry: concurrent enrich pushes (deploy concurrency) can race.
+          branch="${GITHUB_REF_NAME}"
+          git remote set-url origin \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          attempt=1
+          max_attempts=5
+          while true; do
+            if git push origin "HEAD:refs/heads/${branch}"; then
+              echo "Pushed changelog enrichment to ${branch}."
+              break
+            fi
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "::error::push failed after ${max_attempts} attempts"
+              exit 1
+            fi
+            echo "Push rejected — rebase onto origin/${branch} (attempt ${attempt}/${max_attempts})"
+            git fetch origin "$branch"
+            git rebase "origin/${branch}"
+            attempt=$((attempt + 1))
+          done
