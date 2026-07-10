@@ -1,6 +1,6 @@
 name: Reusable / Changelog enrich
 
-# Reusable (workflow_call) post-merge changelog enricher (A-793).
+# Reusable (workflow_call) post-merge changelog enricher (A-793 / A-821).
 #
 # Thin CI wrapper around `@acme-skunkworks/changelog-core` — the package is the
 # single source of truth for enrich/finalise logic. This workflow does NOT
@@ -20,10 +20,13 @@ name: Reusable / Changelog enrich
 #              please cut) so feature merges are not stamped with the previous
 #              version.
 #
-# Write-back: direct push to main of `changelog/**` only, as github-actions[bot],
-# with rebase-retry. Requires the per-repo `changelog/**`-scoped ruleset bypass
-# (A-794) — without it the push is rejected by branch protection. A GITHUB_TOKEN
-# push does not re-fire workflows (no recursion / no loop).
+# Write-back (A-821 / ADR 0004): direct push to main of `changelog/**` only, as
+# road-runner-bot[bot], with rebase-retry. Actions cannot be a Trunk bypass
+# actor on this org (HTTP 422), so the job mints a repo-scoped road-runner-bot
+# installation token. Path limit is workflow discipline (stage only
+# changelog/**) — the bypass actor itself is not path-scoped. App-token pushes
+# DO re-fire workflows; the resolve step's "no associated PR" path is the loop
+# guard (a bot enrich commit has no PR → clean no-op).
 #
 # CONCURRENCY lives in the CALLER (A-621 forbids top-level concurrency here):
 #   deploy — group: changelog-enrich-${{ github.ref }}, cancel-in-progress: false
@@ -32,8 +35,13 @@ name: Reusable / Changelog enrich
 # REQUIRED CALLER PERMISSIONS (A-621): under the org default read-only token the
 # caller MUST declare the scopes below or the run dies at compile time with a
 # `startup_failure`. `pull-requests: read` is required for the commits→pulls
-# resolution API; A-793's "contents: write only" means no publish scopes
-# (id-token / packages / attestations), not blindness to PRs.
+# resolution API; write to main uses the App token, not GITHUB_TOKEN. A-793's
+# "no publish scopes" constraint (no id-token / packages / attestations) still
+# holds.
+#
+# REQUIRED CALLER SECRETS: `secrets: inherit` so ROADRUNNER_PRIVATE_KEY reaches
+# this job. Org var ROADRUNNER_CLIENT_ID must also be visible to the caller
+# (public repos cannot see visibility: private vars — grant selected access).
 #
 # Consumer prerequisite: pin `@acme-skunkworks/changelog-core` as a
 # devDependency so `pnpm exec changelog-core` resolves from the lockfile.
@@ -49,13 +57,14 @@ name: Reusable / Changelog enrich
 #     group: changelog-enrich-${{ github.ref }}
 #     cancel-in-progress: false
 #   permissions:
-#     contents: write
+#     contents: read
 #     pull-requests: read
 #   jobs:
 #     changelog-enrich:
 #       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@v1
 #       with:
 #         mode: enrich
+#       secrets: inherit
 #
 #   # npm — sibling job in pkg-release.yml (inherits that workflow's concurrency)
 #   changelog-enrich:
@@ -63,8 +72,9 @@ name: Reusable / Changelog enrich
 #     with:
 #       mode: finalise
 #     permissions:
-#       contents: write
+#       contents: read
 #       pull-requests: read
+#     secrets: inherit
 
 on:
   workflow_call:
@@ -88,9 +98,16 @@ on:
         type: string
         required: false
         default: changelog
+    secrets:
+      ROADRUNNER_PRIVATE_KEY:
+        description: >-
+          road-runner-bot App private key (org secret). Used to mint a
+          repo-scoped installation token for the changelog/** write-back
+          (A-821 / ADR 0004).
+        required: true
 
 # Deny all token scopes at the workflow root; the job grants the least privilege
-# needed for resolve + push.
+# needed for resolve (GITHUB_TOKEN) + App-token mint.
 permissions: {}
 
 jobs:
@@ -99,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write # Checkout + push enriched changelog/** only
+      contents: read # Checkout + resolve; write-back uses the App token
       pull-requests: read # commits/{sha}/pulls + gh pr view fields
     env:
       HUSKY: 0
@@ -117,13 +134,27 @@ jobs:
               ;;
           esac
 
+      - name: 🔑 Mint repo-scoped road-runner-bot token
+        id: token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.ROADRUNNER_CLIENT_ID }}
+          private-key: ${{ secrets.ROADRUNNER_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: 🛎️ Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           # Full history + tags so the finalise path's version-vs-tag gate can
-          # resolve (mirrors reusable-pkg-release.yml). persist-credentials
-          # stays true (default) so the write-back push can use GITHUB_TOKEN.
+          # resolve (mirrors reusable-pkg-release.yml). App token for write-back;
+          # do not persist it into .git/config — the push step sets the remote
+          # URL explicitly.
+          token: ${{ steps.token.outputs.token }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4.4.0
@@ -153,7 +184,7 @@ jobs:
           set -euo pipefail
           # Merge commit → associated PR (A-777). Prefer the first merged PR;
           # a push with no associated PR (direct push, bot commit) is a clean
-          # no-op for enrich.
+          # no-op for enrich — also the App-token re-fire loop guard (A-821).
           pulls_json="$(gh api \
             "repos/${{ github.repository }}/commits/${MERGE_SHA}/pulls" \
             -H "Accept: application/vnd.github+json")"
@@ -252,19 +283,20 @@ jobs:
       - name: 📤 Commit and push changelog/**
         env:
           CHANGELOG_DIR: ${{ inputs.changelog-dir }}
-          GITHUB_TOKEN: ${{ github.token }}
+          APP_TOKEN: ${{ steps.token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          # Stage ONLY the changelog directory — never the rest of the tree.
+          # Stage ONLY the changelog directory — never the rest of the tree
+          # (workflow discipline = path limit for the bypass actor; A-821).
           if [ ! -d "$CHANGELOG_DIR" ]; then
             echo "No $CHANGELOG_DIR/ directory — nothing to push."
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "road-runner-bot[bot]"
+          git config user.email "road-runner-bot[bot]@users.noreply.github.com"
           git add -- "$CHANGELOG_DIR"
           if git diff --cached --quiet; then
             echo "No changelog changes — nothing to push."
@@ -275,7 +307,7 @@ jobs:
           # Rebase-retry: concurrent enrich pushes (deploy concurrency) can race.
           branch="${GITHUB_REF_NAME}"
           git remote set-url origin \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
           attempt=1
           max_attempts=5

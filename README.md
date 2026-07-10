@@ -24,7 +24,7 @@ release gate pattern).
 | `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
 | `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
 | `reusable-validate-payload.yml`   | Fan-out payload check — skills bundles and/or `.coderabbit.yaml` (Layer 2).                   | — (uses `GITHUB_TOKEN`)   |
-| `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).       | — (uses `GITHUB_TOKEN`)   |
+| `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).       | `ROADRUNNER_PRIVATE_KEY`  |
 
 > **Why `reusable-` prefixes?** It lets a consumer repo (and this repo, which
 > dogfoods its own workflows) keep a same-named caller stub — e.g. `claude.yml`
@@ -65,7 +65,7 @@ job requests:
 | `reusable-claude-code-review.yml` | `contents: read`, `pull-requests: write`, `issues: read`, `id-token: write`                     |
 | `reusable-pkg-release.yml`        | `contents: write`, `id-token: write`, `issues: write`, `packages: write`, `attestations: write` |
 | `reusable-validate-payload.yml`   | `contents: read`                                                                                |
-| `reusable-changelog-enrich.yml`   | `contents: write`, `pull-requests: read`                                                        |
+| `reusable-changelog-enrich.yml`   | `contents: read`, `pull-requests: read`                                                         |
 
 `id-token: write` is **required**, not optional, on both Claude workflows —
 claude-code-action exchanges an OIDC token for its short-lived GitHub token, so
@@ -323,14 +323,23 @@ jobs:
 
 Post-merge fill of dated `changelog/` entries via
 [`@acme-skunkworks/changelog-core`](https://www.npmjs.com/package/@acme-skunkworks/changelog-core)
-(A-793). Resolves the just-merged PR from the push SHA, runs `enrich` and
-(optionally) `finalise`, then pushes **only** `changelog/**` with the repo's
-own `GITHUB_TOKEN`. Requires a `changelog/**`-scoped ruleset bypass for the
-repo's Actions identity (A-794) before the write-back can land on protected
-`main`.
+(A-793 / A-821). Resolves the just-merged PR from the push SHA, runs `enrich`
+and (optionally) `finalise`, then pushes **only** `changelog/**` as
+`road-runner-bot[bot]`. Write-back mints a repo-scoped installation token from
+org var `ROADRUNNER_CLIENT_ID` + secret `ROADRUNNER_PRIVATE_KEY` — Actions
+cannot be a Trunk bypass actor on this org (ADR 0004 / A-794), so the bypass
+actor is road-runner-bot and the path limit is workflow discipline (stage only
+`changelog/**`). Callers **must** pass `secrets: inherit`.
 
-**Consumer prerequisite:** add `@acme-skunkworks/changelog-core` as a
-devDependency so `pnpm exec changelog-core` resolves from the lockfile.
+**Consumer prerequisites:**
+
+- Add `@acme-skunkworks/changelog-core` as a devDependency so
+  `pnpm exec changelog-core` resolves from the lockfile.
+- Org secret `ROADRUNNER_PRIVATE_KEY` and org var `ROADRUNNER_CLIENT_ID` must
+  be visible to the caller (grant selected access — public repos cannot see
+  `visibility: private` vars/secrets).
+- Protected `main` must allow road-runner-bot as a Trunk bypass actor
+  (ADR 0004).
 
 #### Deploy targets (`mode: enrich`)
 
@@ -347,7 +356,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 jobs:
@@ -355,6 +364,7 @@ jobs:
     uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@v1
     with:
       mode: enrich
+    secrets: inherit
 ```
 
 #### npm targets (`mode: finalise`)
@@ -371,13 +381,15 @@ changelog-enrich:
   with:
     mode: finalise
   permissions:
-    contents: write
+    contents: read
     pull-requests: read
+  secrets: inherit
 ```
 
-`pull-requests: read` is required for the commits→pulls resolution API — the
-A-793 "contents: write only" constraint means no publish scopes (`id-token` /
-`packages` / `attestations`), not blindness to PRs. Other inputs:
+`pull-requests: read` is required for the commits→pulls resolution API;
+`contents: read` covers checkout + resolve — write to `main` uses the App
+token, not `GITHUB_TOKEN`. A-793's "no publish scopes" constraint (no
+`id-token` / `packages` / `attestations`) still holds. Other inputs:
 `node-version-file` (default `.nvmrc`) and `changelog-dir` (default `changelog`).
 
 ## Versioning
