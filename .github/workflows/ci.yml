@@ -142,6 +142,8 @@ jobs:
   changelog:
     name: 📓 Changelog
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
     steps:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -149,15 +151,23 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4.4.0
+        with:
+          run_install: false
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: 📓 Validate changelog entries
-        # The changelog skill's validator is dependency-free (node stdlib only),
-        # so no pnpm install is needed. Mirrors the `validate:changelog` script.
-        run: node .claude/skills/changelog/scripts/validate-changelog.mjs
+        # Shared SoT with the post-merge enricher (A-800): changelog-core.
+        run: pnpm run validate:changelog
 
   go-no-go:
     # The reference GO/NO GO aggregator (A-418), dogfooded here. Its intrinsic

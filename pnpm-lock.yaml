@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@acme-skunkworks/changelog-core':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@acme-skunkworks/markdownlint-config':
         specifier: ^2.0.0
         version: 2.0.1
@@ -28,6 +31,11 @@ importers:
         version: 3.7.1
 
 packages:
+
+  '@acme-skunkworks/changelog-core@1.1.0':
+    resolution: {integrity: sha512-uSPCbspEt77l9k+q3EGpiey/RsuDC40+v1XJUa8U0sNP/P/U6N3TOpJ+t9FVOUvyau4FrpnSdol6YVJcd7ti7A==}
+    engines: {node: '>=22'}
+    hasBin: true
 
   '@acme-skunkworks/markdownlint-config@2.0.1':
     resolution: {integrity: sha512-+sDq+P6AAEXBi1D0tSsrEqdIFoBT40/CpVIVBGakzIMKwWbZgNaGvdo9L6PmUziQ9HXxeYrL5JLL/xfRaxRpIA==}
@@ -482,6 +490,8 @@ packages:
     hasBin: true
 
 snapshots:
+
+  '@acme-skunkworks/changelog-core@1.1.0': {}
 
   '@acme-skunkworks/markdownlint-config@2.0.1': {}
 
