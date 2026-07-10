@@ -23,6 +23,7 @@ release gate pattern).
 | `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate (Layer 2). | — (uses `GITHUB_TOKEN`)   |
 | `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
 | `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
+| `reusable-validate-payload.yml`   | Fan-out payload check — skills bundles and/or `.coderabbit.yaml` (Layer 2).                   | — (uses `GITHUB_TOKEN`)   |
 | `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).       | — (uses `GITHUB_TOKEN`)   |
 
 > **Why `reusable-` prefixes?** It lets a consumer repo (and this repo, which
@@ -63,6 +64,7 @@ job requests:
 | `reusable-claude.yml`             | `contents: read`, `pull-requests: read`, `issues: read`, `id-token: write`, `actions: read`     |
 | `reusable-claude-code-review.yml` | `contents: read`, `pull-requests: write`, `issues: read`, `id-token: write`                     |
 | `reusable-pkg-release.yml`        | `contents: write`, `id-token: write`, `issues: write`, `packages: write`, `attestations: write` |
+| `reusable-validate-payload.yml`   | `contents: read`                                                                                |
 | `reusable-changelog-enrich.yml`   | `contents: write`, `pull-requests: read`                                                        |
 
 `id-token: write` is **required**, not optional, on both Claude workflows —
@@ -291,6 +293,31 @@ auto-creates it **unprotected**, losing the ref gate (A-326). There is **no**
 `npm-scope` is the only required input; a build-less package (config- or
 bundle-only, no `build` script) passes `build: false`. Other notable inputs:
 `node-version-file`, `publish-github-packages`, `changelog-dir` and `tag-prefix`.
+
+### `reusable-validate-payload.yml`
+
+Fan-out payload check (A-738). Callers declare what must be present — never
+auto-detected. The job name is `Validate fanned payload`; callers **must** use
+the job id `validate-payload` so the ruleset-pinnable context is
+`validate-payload / Validate fanned payload`.
+
+```yaml
+# .github/workflows/validate-payload.yml
+name: Validate fanned payload
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-payload:
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-payload.yml@v1
+    with:
+      skills: true # require well-formed .claude/skills/** (+ .agents/skills/**)
+      coderabbit: true # require a parseable .coderabbit.yaml
+```
 
 ### `reusable-changelog-enrich.yml`
 
