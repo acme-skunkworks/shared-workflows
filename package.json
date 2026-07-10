@@ -23,7 +23,6 @@
   },
   "type": "module",
   "scripts": {
-    "changelog:enrich": "node .claude/skills/changelog/scripts/enrich-changelog.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"!**/node_modules/**\"",
@@ -31,7 +30,7 @@
     "lint:workflows": "actionlint",
     "lint:yaml": "yamllint .",
     "prepare": "husky",
-    "validate:changelog": "node .claude/skills/changelog/scripts/validate-changelog.mjs"
+    "validate:changelog": "pnpm exec changelog-core validate"
   },
   "lint-staged": {
     "**/*": [
@@ -51,6 +50,7 @@
     ]
   },
   "devDependencies": {
+    "@acme-skunkworks/changelog-core": "^1.1.0",
     "@acme-skunkworks/markdownlint-config": "^2.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.2",

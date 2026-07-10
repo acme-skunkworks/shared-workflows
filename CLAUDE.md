@@ -38,6 +38,7 @@ and dogfood them.
 │   ├── reusable-pkg-release.yml         # PRODUCT: build-once → npm OIDC + Packages mirror (Layer 2)
 │   ├── reusable-changelog-enrich.yml    # PRODUCT: post-merge changelog enrich/finalise (Layer 2, A-793)
 │   ├── reusable-validate-payload.yml    # PRODUCT: fan-out payload check (Layer 2)
+│   ├── changelog-enrich.yml             # self-host: post-merge enrich caller (A-800)
 │   ├── claude.yml                       # self-host: inline @claude on THIS repo
 │   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
 │   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
@@ -272,8 +273,8 @@ contract via the `📓 Changelog` job in the `GO/NO GO` aggregator. Post-merge
 enrichment lives in `reusable-changelog-enrich.yml` (A-793 / A-821) — consumers
 call it with `secrets: inherit` so the job can mint a road-runner-bot
 installation token and push `changelog/**` (ADR 0004; Actions cannot be a Trunk
-bypass actor). This repo's caller lands with the deploy rollout (A-800); until
-then those fields stay blank here.
+bypass actor). This repo's own caller is
+`.github/workflows/changelog-enrich.yml` (`mode: enrich`, A-800).
 
 ## Linting and formatting
 
