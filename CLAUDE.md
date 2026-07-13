@@ -229,7 +229,7 @@ release-orchestrator target.
   the tag (`include-component-in-tag: false` keeps tags bare `vX.Y.Z`).
 - **`move-floating-major.yml`** force-moves the floating major tag (`v1`, …) onto
   each release commit — shared-workflows-specific (consumers pin `@v1`, A-662),
-  which octavo has no equivalent of. Phase-independent.
+  which octavo has no equivalent of.
 - **Release cutover (A-597) — complete.** The private release-orchestrator now
   drives release-please for this repo as a `kind: deploy` target (its
   `orchestrate-releases.yml` matrix); on a releasable merge it maintains the
