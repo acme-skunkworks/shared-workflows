@@ -2,7 +2,6 @@ name: Changelog enrich
 
 # Post-merge dated-changelog enrich for this deploy target (A-800 / A-821).
 # Never pull_request_target. App-token write-back requires secrets: inherit.
-# Pin is the A-821 merge SHA until a release that includes it moves @v1.
 on:
   push:
     branches:
@@ -16,7 +15,7 @@ permissions: {}
 
 jobs:
   changelog-enrich:
-    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@a87a5ba1eaa9dea0b9fb87afebe47f1c92ea7455
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-changelog-enrich.yml@v1
     with:
       mode: enrich
     permissions:

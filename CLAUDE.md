@@ -229,16 +229,20 @@ release-orchestrator target.
   the tag (`include-component-in-tag: false` keeps tags bare `vX.Y.Z`).
 - **`move-floating-major.yml`** force-moves the floating major tag (`v1`, …) onto
   each release commit — shared-workflows-specific (consumers pin `@v1`, A-662),
-  which octavo has no equivalent of. Phase-independent.
-- **Phased rollout (A-597):** _Phase A (current)_ — the in-repo
-  `release-please.yml` drives releases directly. Because a `GITHUB_TOKEN`-opened
-  PR does not trigger this repo's `on: pull_request` CI, **`GO/NO GO` must not be
-  a required check on `main`** while Phase A is live (the release PR's checks
-  never run, so a required gate would wedge it). _Phase B_ — hand release-please
-  off to the private release-orchestrator (add shared-workflows to its
-  `orchestrate-releases.yml` / `enrich-changelogs.yml` matrices), delete
-  `release-please.yml`, enable forward changelog authoring (`send-it`
-  `changelog: true` + the `changelog` skill), and make `GO/NO GO` required.
+  which octavo has no equivalent of.
+- **Release cutover (A-597) — complete.** The private release-orchestrator now
+  drives release-please for this repo as a `kind: deploy` target (its
+  `orchestrate-releases.yml` matrix); on a releasable merge it maintains the
+  release PR and cuts the `vX.Y.Z` tag + GitHub Release directly from the
+  manifest (A-677), after which `move-floating-major.yml` force-moves `@v1`. The
+  interim in-repo `release-please.yml` that bootstrapped the flow has been
+  **deleted**, and `GO/NO GO` is now the single required check on `main`. Forward
+  changelog authoring is live (`send-it` `changelog: true` + the `changelog`
+  skill), and **post-merge enrichment runs in-repo** via
+  [`changelog-enrich.yml`](.github/workflows/changelog-enrich.yml) →
+  `reusable-changelog-enrich.yml` (`mode: enrich`) — **not** the retired central
+  `enrich-changelogs.yml` cron (deleted in A-801; enrichment moved into each
+  repo).
 
 ## Commands
 
