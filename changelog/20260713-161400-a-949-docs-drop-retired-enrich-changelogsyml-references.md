@@ -1,11 +1,11 @@
 ---
 title: Drop retired enrich-changelogs.yml references; document changelog-core enrich model
-release_note: "Docs now describe the current release and enrichment model: the private release-orchestrator drives release-please as a kind: deploy target, post-merge enrichment runs in-repo via reusable-changelog-enrich.yml (@acme-skunkworks/changelog-core), and @v1 already carries the A-821 write-back (as of v1.5.0) so callers need no SHA pin."
-created_at: "2026-07-13T16:14:00Z"
-merged_at:
+release_note: 'Docs now describe the current release and enrichment model: the private release-orchestrator drives release-please as a kind: deploy target, post-merge enrichment runs in-repo via reusable-changelog-enrich.yml (@acme-skunkworks/changelog-core), and @v1 already carries the A-821 write-back (as of v1.5.0) so callers need no SHA pin.'
+created_at: '2026-07-13T16:14:00Z'
+merged_at: '2026-07-13T18:54:41Z'
 branch: a-949-docs-drop-retired-enrich-changelogsyml-references-document
-pr:
-commit:
+pr: 73
+commit: 0422a0e
 merge_strategy:
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -14,9 +14,9 @@ breaking: false
 issues:
   - A-949
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 6
+  loc_added: 91
+  loc_removed: 33
   commits:
 ---
 
