@@ -10,12 +10,12 @@ GitHub release** over the reusable workflows and composite actions, nothing more
 Each entry carries a `version` tying it to the tag it shipped in, and the GitHub
 release notes are sourced from the matching entry's body.
 
-**Releases are automated (A-597).** On merge to `main`,
-[`release-please.yml`](../.github/workflows/release-please.yml) maintains a
-release PR from the Conventional-Commit history; merging it bumps
+**Releases are automated (A-597).** The private release-orchestrator drives
+release-please for this repo as a `kind: deploy` target: it maintains a release
+PR from the Conventional-Commit history, and merging it bumps
 [`package.json`](../package.json) + [`.release-please-manifest.json`](../.release-please-manifest.json)
-and cuts the annotated `vX.Y.Z` tag and its GitHub Release. Consumers pin their
-callers to `@v1` (A-662), so
+and cuts the annotated `vX.Y.Z` tag and its GitHub Release from the manifest.
+Consumers pin their callers to `@v1` (A-662), so
 [`move-floating-major.yml`](../.github/workflows/move-floating-major.yml) then
 force-moves the floating major tag onto the release commit — otherwise the
 release would never reach `@v1` consumers.
@@ -29,11 +29,12 @@ A breaking change ships as `v2` (a new floating major) and must **not** move `v1
 `move-floating-major.yml` handles this — it only ever touches the release's own
 major tag.
 
-> **Phase B (A-597):** release-please will be driven by the private
-> release-orchestrator (shared-workflows joins as a `kind: deploy` target, like
-> octavo), which also enriches these entries post-merge with the `merged_at` /
-> `commit` / `stats` fields. Until that cutover, the in-repo `release-please.yml`
-> above drives releases.
+> **Post-merge enrichment (A-793 / A-821).** These entries are filled in after
+> merge with their `merged_at` / `commit` / `pr` / `stats` fields by the in-repo
+> [`changelog-enrich.yml`](../.github/workflows/changelog-enrich.yml) workflow
+> (`mode: enrich`), which pushes only `changelog/**` back to `main` as
+> `road-runner-bot[bot]`. So an entry authored on a branch carries blank
+> post-merge fields until that workflow runs.
 
 The entries up to and including `v1.0.0` were **hand-authored as a backfill**
 (A-585), reconstructing the project's history from its merged PRs. Forward entries

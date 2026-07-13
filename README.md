@@ -364,6 +364,11 @@ cannot be a Trunk bypass actor on this org (ADR 0004 / A-794), so the bypass
 actor is road-runner-bot and the path limit is workflow discipline (stage only
 `changelog/**`). Callers **must** pass `secrets: inherit`.
 
+`@v1` includes the road-runner-bot write-back (A-821) as of **v1.5.0**, so pin
+callers to `@v1` like any other reusable workflow — no SHA pin is needed. (Early
+adopters pinned the A-821 merge SHA directly while `@v1` still predated it, before
+v1.5.0 moved the floating major onto that commit.)
+
 **Consumer prerequisites:**
 
 - Add `@acme-skunkworks/changelog-core` as a devDependency so
@@ -464,9 +469,9 @@ updates:
       include: scope
 ```
 
-Releases here are tagged (`vX.Y.Z`) automatically by
-[release-please](.github/workflows/release-please.yml), and the floating **`v1`**
-tag tracks the latest `v1.x`. The full history lives in [`changelog/`](changelog/)
+Releases here are tagged (`vX.Y.Z`) automatically by release-please (driven by
+the private release-orchestrator as a `kind: deploy` target), and the floating
+**`v1`** tag tracks the latest `v1.x`. The full history lives in [`changelog/`](changelog/)
 and on the [releases page](https://github.com/acme-skunkworks/shared-workflows/releases),
 each tag with a matching GitHub release. Prefer `@v1`; if you need to pin an exact
 commit, use the SHA a specific `vX.Y.Z` tag points at.
