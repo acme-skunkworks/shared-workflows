@@ -7,9 +7,9 @@ name: Move floating major tag
 # github-release` does this — it is shared-workflows-specific (octavo, the model
 # `kind: deploy` target, has no floating-tag consumers), so it lives here.
 #
-# Phase-independent (A-597): it fires on the `release` event regardless of who
-# cut the release — the interim in-repo release-please.yml (Phase A) or the
-# release-orchestrator (Phase B).
+# It fires on the `release` event when the release-orchestrator publishes the
+# GitHub Release (A-597 cutover complete — the orchestrator drives release-please
+# for this repo as a `kind: deploy` target).
 #
 # The floating major is a LIGHTWEIGHT tag by design (changelog/README.md): on a
 # perpetually-moving ref an annotated tag's embedded tagger/message would only
@@ -17,12 +17,10 @@ name: Move floating major tag
 # API (below) yields exactly a lightweight ref. The permanent `vX.Y.Z` tags stay
 # annotated — that is where the release audit trail lives.
 #
-# Phase note (A-597): a GITHUB_TOKEN-created release does NOT fire `on: release`
-# (GitHub's recursion guard), so in Phase A this workflow does not run — the
-# interim release-please.yml moves the floating major inline from the action's
-# outputs instead. In Phase B the orchestrator publishes the Release under its
+# Trigger note (A-597): a GITHUB_TOKEN-created release does NOT fire `on: release`
+# (GitHub's recursion guard). The orchestrator publishes the Release under its
 # road-runner-bot App token, and App-token events DO fire this trigger, so this
-# workflow takes over. (Worth confirming live on the first orchestrated release.)
+# workflow runs and moves the floating major.
 
 on:
   release:

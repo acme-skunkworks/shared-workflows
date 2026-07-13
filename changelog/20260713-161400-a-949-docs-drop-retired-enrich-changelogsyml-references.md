@@ -39,6 +39,9 @@ and the retired central cron.
 - `changelog/README.md` — rewrote the release story to the orchestrator-driven
   model and replaced the stale "Phase B" note with the in-repo post-merge
   enrichment description.
+- `.github/workflows/move-floating-major.yml` — rewrote the stale Phase A/B
+  header comments (which still referenced the deleted in-repo `release-please.yml`
+  and an unconfirmed first orchestrated release) to the completed-cutover reality.
 
 ## Fixed
 
