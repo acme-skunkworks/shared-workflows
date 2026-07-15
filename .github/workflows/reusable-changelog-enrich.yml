@@ -134,6 +134,25 @@ jobs:
               ;;
           esac
 
+      - name: 🚦 Guard — ROADRUNNER_PRIVATE_KEY is set
+        # A-646 / A-422: `required: true` on a workflow_call secret only forces the
+        # caller to MAP the secret (e.g. `secrets: inherit`) — it does NOT guarantee
+        # a non-empty VALUE. A consumer inheriting from a repo where the key is unset
+        # passes an empty string that satisfies the schema, then
+        # create-github-app-token dies deep in its JWT signing with an opaque error
+        # and the write-back silently never happens. Fail fast here with a clear
+        # message (mirrors the guard in reusable-claude.yml). `secrets` isn't
+        # available in a step `if:`, so map it into `env:` and test the shell.
+        env:
+          ROADRUNNER_PRIVATE_KEY: ${{ secrets.ROADRUNNER_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ROADRUNNER_PRIVATE_KEY:-}" ]; then
+            echo "::error::ROADRUNNER_PRIVATE_KEY is empty. Define it as a repository Actions secret in the consuming repo and pass 'secrets: inherit' from the caller (A-646). It pairs with the vars.ROADRUNNER_CLIENT_ID variable."
+            exit 1
+          fi
+          echo "OK — ROADRUNNER_PRIVATE_KEY is present."
+
       - name: 🔑 Mint repo-scoped road-runner-bot token
         id: token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
