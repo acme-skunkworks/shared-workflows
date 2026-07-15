@@ -1,10 +1,7 @@
 ---
 title: Pre-GA security review sign-off and reusable-workflow hardening
-release_note: >-
-  reusable-changelog-enrich.yml now fails fast with a clear message when
-  ROADRUNNER_PRIVATE_KEY is mapped but empty, instead of dying deep inside JWT
-  signing and silently skipping the changelog write-back.
-created_at: "2026-07-15T12:13:04Z"
+release_note: reusable-changelog-enrich.yml now fails fast with a clear message when ROADRUNNER_PRIVATE_KEY is mapped but empty, instead of dying deep inside JWT signing and silently skipping the changelog write-back.
+created_at: '2026-07-15T12:13:04Z'
 branch: a-422-pre-ga-enforce-sha-pin-policy-security-review-of-shared
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -12,13 +9,13 @@ category: fix
 breaking: false
 issues:
   - A-422
-merged_at: ""
-commit: ""
-pr:
+merged_at: '2026-07-15T12:39:15Z'
+commit: efa6fca
+pr: 77
 stats:
-  loc_added:
-  loc_removed:
-  files_changed:
+  loc_added: 348
+  loc_removed: 2
+  files_changed: 6
 ---
 
 ## Changed
