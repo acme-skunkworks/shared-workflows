@@ -360,7 +360,10 @@ The forward path is already ticketed under **A-412**; this ADR ratifies it rathe
 5. **Flip the orchestrator** — A-419: `CHECK_NAME` dual-accept → `GO/NO GO`-only once every served
    repo emits it (keep the A-334 TOCTOU guard).
 6. **Shared Claude pair callers** — A-428 (and per-repo, e.g. A-433 Octavo).
-7. **Pre-GA gate** — A-422: SHA-pin policy enforcement + security review of the shared workflows.
+7. **Pre-GA gate** — A-422: SHA-pin policy enforcement + security review of the shared
+   workflows. **Signed off** — org-wide `sha_pinning_required` confirmed, the publish /
+   secrets / ruleset / floating-`@v1` surfaces reviewed and blessed; see
+   [`docs/security-review-a422.md`](../security-review-a422.md).
 
 ### 7.1 Decommission the old gate immediately — A-437
 
