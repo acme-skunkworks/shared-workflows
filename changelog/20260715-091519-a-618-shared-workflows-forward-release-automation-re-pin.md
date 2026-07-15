@@ -1,7 +1,7 @@
 ---
 title: Re-pin internal action refs to v1.5.0
-release_note: ""
-created_at: "2026-07-15T09:15:19Z"
+release_note: ''
+created_at: '2026-07-15T09:15:19Z'
 branch: a-618-shared-workflows-forward-release-automation-re-pin-internals
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -9,6 +9,13 @@ category: chore
 breaking: false
 issues:
   - A-618
+merged_at: '2026-07-15T09:57:06Z'
+commit: '6356491'
+pr: 75
+stats:
+  loc_added: 40
+  loc_removed: 12
+  files_changed: 4
 ---
 
 ## Changed
