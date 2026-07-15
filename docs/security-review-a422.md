@@ -9,8 +9,10 @@ auto-propagation model, and confirms the org-level SHA-pin policy and Dependabot
 - **Reviewer:** Rob Easthope
 - **Method:** read-only source review of every `reusable-*.yml` + `.github/actions/**`,
   plus live GitHub API probes of the org/repo policy and rulesets (evidence inline below).
-- **Overall verdict:** **PASS to GA**, subject to the one open item in
-  [§8](#8-findings--follow-ups) (ruleset source-of-truth drift — a hygiene fix, not a GA blocker).
+- **Overall verdict:** **PASS to GA**, subject to the open follow-ups in
+  [§8](#8-findings--follow-ups) — **none GA-blocking**: the ruleset source-of-truth drift is
+  an in-repo hygiene fix, and npm OIDC Trusted Publishing is a post-GA verification (one
+  live publish, A-456).
 
 The trust model this review validates is defined in
 [ADR 0001 §D5/§D6](adr/0001-shared-ci-architecture-for-npm-packages.md) and codified for
@@ -55,7 +57,7 @@ Every `reusable-*.yml` sets root `permissions: {}` and declares **typed** `secre
 | --------------------------------- | ------------------------- | -------------------------------------- | ----------------------- |
 | `reusable-claude.yml`             | `CLAUDE_CODE_OAUTH_TOKEN` | `claude-code-action` (`:117`)          | ✅ A-646 (`:93-109`)    |
 | `reusable-claude-code-review.yml` | `CLAUDE_CODE_OAUTH_TOKEN` | `claude-code-action` (`:156`)          | ✅ A-646 (`:132-148`)   |
-| `reusable-changelog-enrich.yml`   | `ROADRUNNER_PRIVATE_KEY`  | `create-github-app-token` (`:139-147`) | ✅ **added in this PR** |
+| `reusable-changelog-enrich.yml`   | `ROADRUNNER_PRIVATE_KEY`  | `create-github-app-token` (`:156-166`) | ✅ **added in this PR** |
 
 All other reusables (`pkg-release`, `build-test`, `lint`, `load-repo-config`,
 `validate-payload`, `validate-pr-title`) declare **no `secrets:` block** and rely only on
