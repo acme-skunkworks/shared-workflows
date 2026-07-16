@@ -76,4 +76,4 @@ jobs:
 
       - name: ⚙️ Load repo config
         id: repo
-        uses: acme-skunkworks/shared-workflows/.github/actions/load-repo-config@ba77002fe9249ec379930861ed693e1b6ac3bf37 # v1.5.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/load-repo-config@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
