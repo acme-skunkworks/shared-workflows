@@ -172,25 +172,25 @@ jobs:
         # skip it when a repo runs YAML-only (yamllint/actionlint use pip + the
         # pinned installer, not pnpm).
         if: ${{ inputs.eslint || inputs.markdown || inputs.changelog }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@ba77002fe9249ec379930861ed693e1b6ac3bf37 # v1.5.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
       - name: 🧹 ESLint
         if: ${{ inputs.eslint }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/eslint@ba77002fe9249ec379930861ed693e1b6ac3bf37 # v1.5.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/eslint@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           args: ${{ inputs.eslint-args }}
 
       - name: 📝 Lint Markdown
         if: ${{ inputs.markdown }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@ba77002fe9249ec379930861ed693e1b6ac3bf37 # v1.5.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           globs: ${{ inputs.markdown-globs }}
 
       - name: 📐 Lint YAML
         if: ${{ inputs.yaml }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/lint-yaml@ba77002fe9249ec379930861ed693e1b6ac3bf37 # v1.5.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-yaml@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           paths: ${{ inputs.yaml-paths }}
           actionlint: ${{ inputs.actionlint }}
@@ -199,6 +199,6 @@ jobs:
 
       - name: 🗒️ Validate changelog
         if: ${{ inputs.changelog }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/changelog-validate@ba77002fe9249ec379930861ed693e1b6ac3bf37 # v1.5.0
+        uses: acme-skunkworks/shared-workflows/.github/actions/changelog-validate@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           script: ${{ inputs.changelog-script }}
