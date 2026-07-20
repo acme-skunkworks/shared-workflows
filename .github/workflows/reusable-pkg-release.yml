@@ -209,7 +209,7 @@ jobs:
           persist-credentials: false # Nothing git-pushes; avoid artipacked exposure.
 
       - name: 🧰 Set up project
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # shared-workflows actions @d0a5949 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # shared-workflows actions @v1.5.1
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
@@ -217,7 +217,7 @@ jobs:
         # Skipped for build-less packages (`build: false`) — the pack step below
         # still produces the tarball from the package sources.
         if: ${{ inputs.build }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/build@950537e9b87ebebef89222a8747331d489d17f65 # shared-workflows actions @d0a5949 (pre-release internal pin)
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@950537e9b87ebebef89222a8747331d489d17f65 # shared-workflows actions @v1.5.1
         with:
           script: ${{ inputs.build-script }}
 
