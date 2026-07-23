@@ -1,14 +1,11 @@
 ---
-title: "Add reusable-validate-commits.yml base..head commitlint gate"
-release_note: >-
-  New reusable workflow lints every commit in a PR's base..head range against
-  @acme-skunkworks/commitlint-config (floated to latest), under the same
-  no-secrets trust model as the PR-title gate.
-created_at: "2026-07-23T12:10:27Z"
-merged_at:
+title: Add reusable-validate-commits.yml base..head commitlint gate
+release_note: New reusable workflow lints every commit in a PR's base..head range against @acme-skunkworks/commitlint-config (floated to latest), under the same no-secrets trust model as the PR-title gate.
+created_at: '2026-07-23T12:10:27Z'
+merged_at: '2026-07-23T13:05:09Z'
 branch: a-981-build-reusable-validate-commitsyml-basehead-commitlint-gate
-pr:
-commit:
+pr: 84
+commit: 6ccb2ab
 merge_strategy:
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -17,9 +14,9 @@ breaking: false
 issues:
   - A-981
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 6
+  loc_added: 278
+  loc_removed: 26
   commits:
 ---
 
