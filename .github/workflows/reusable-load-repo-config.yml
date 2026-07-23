@@ -69,11 +69,11 @@ jobs:
       github_packages_registry_url: ${{ steps.repo.outputs.github_packages_registry_url }}
     steps:
       - name: ⬇️ Checkout repo
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
 
       - name: ⚙️ Load repo config
         id: repo
-        uses: acme-skunkworks/shared-workflows/.github/actions/load-repo-config@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/load-repo-config@51bd86e5d9c16844590e9d21387c3a1ae088187a # v1.5.2
