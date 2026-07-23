@@ -51,7 +51,9 @@
   },
   "devDependencies": {
     "@acme-skunkworks/changelog-core": "^1.1.0",
+    "@acme-skunkworks/commitlint-config": "^1.0.0",
     "@acme-skunkworks/markdownlint-config": "^2.0.0",
+    "@commitlint/cli": "^21.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "markdownlint-cli2": "^0.23.0",

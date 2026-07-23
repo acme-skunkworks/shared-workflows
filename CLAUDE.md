@@ -315,7 +315,7 @@ apparatus — it holds workflows, not a published package, so CI installs
   isn't installed).
 - **commit-msg** — strips `Co-Authored-By: Claude … <noreply@anthropic.com>`
   trailers (Claude is tooling, not a contributor).
-- **pre-push** — blocks direct pushes to `main` (open a PR instead) and runs
+- **pre-push** — blocks direct pushes to `main` (open a PR instead) and runs A-1023 also runs a best-effort `commitlint --from origin/main --to HEAD` range check, skipping with an install hint when `@commitlint/cli` or `origin/main` is missing; CI’s reusable commit-validation workflow remains authoritative. Configuration is `commitlint.config.mjs`, extending `@acme-skunkworks/commitlint-config`.
   yamllint + actionlint as the last gate before CI. Bot identities bypass.
 
 Hooks are dormant in CI: `HUSKY=0` is set on the only job that runs
