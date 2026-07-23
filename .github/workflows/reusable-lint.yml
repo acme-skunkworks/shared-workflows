@@ -163,7 +163,7 @@ jobs:
           echo 'OK — at least one lint lane is enabled.'
 
       - name: 🛎️ Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -172,25 +172,25 @@ jobs:
         # skip it when a repo runs YAML-only (yamllint/actionlint use pip + the
         # pinned installer, not pnpm).
         if: ${{ inputs.eslint || inputs.markdown || inputs.changelog }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@51bd86e5d9c16844590e9d21387c3a1ae088187a # v1.5.2
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
       - name: 🧹 ESLint
         if: ${{ inputs.eslint }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/eslint@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/eslint@51bd86e5d9c16844590e9d21387c3a1ae088187a # v1.5.2
         with:
           args: ${{ inputs.eslint-args }}
 
       - name: 📝 Lint Markdown
         if: ${{ inputs.markdown }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@51bd86e5d9c16844590e9d21387c3a1ae088187a # v1.5.2
         with:
           globs: ${{ inputs.markdown-globs }}
 
       - name: 📐 Lint YAML
         if: ${{ inputs.yaml }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/lint-yaml@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/lint-yaml@51bd86e5d9c16844590e9d21387c3a1ae088187a # v1.5.2
         with:
           paths: ${{ inputs.yaml-paths }}
           actionlint: ${{ inputs.actionlint }}
@@ -199,6 +199,6 @@ jobs:
 
       - name: 🗒️ Validate changelog
         if: ${{ inputs.changelog }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/changelog-validate@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/changelog-validate@51bd86e5d9c16844590e9d21387c3a1ae088187a # v1.5.2
         with:
           script: ${{ inputs.changelog-script }}
