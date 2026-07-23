@@ -122,8 +122,7 @@ POST repos/<owner>/<repo>/rulesets` instead (same `--input` rule).
 
 `shared-workflows` also carried an **org-level** ruleset `Protect main trunk`
 (`deletion` + `non_fast_forward` only) — a strict subset of `Trunk`, now redundant.
-Because it is **org-sourced** it cannot
- be edited from this repo; remove it at
+Because it is **org-sourced** it cannot be edited from this repo; remove it at
 **org → Settings → Rules → Rulesets** (or
 `gh api --method DELETE /orgs/<org>/rulesets/<id>`) once `trunk.json` is applied to
 the member repos, so the baseline lives in one place.
