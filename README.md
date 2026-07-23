@@ -20,6 +20,7 @@ release gate pattern).
 | `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.                                      | `CLAUDE_CODE_OAUTH_TOKEN` |
 | `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                                                     | `CLAUDE_CODE_OAUTH_TOKEN` |
 | `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (the squash-merge subject).                            | — (uses `GITHUB_TOKEN`)   |
+| `reusable-validate-commits.yml`   | Enforce Conventional Commits on every commit in a PR's `base..head` range (A-981).            | — (uses `GITHUB_TOKEN`)   |
 | `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate (Layer 2). | — (uses `GITHUB_TOKEN`)   |
 | `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
 | `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
@@ -60,6 +61,7 @@ job requests:
 | Reusable workflow                 | Required caller `permissions:`                                                                  |
 | --------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `reusable-validate-pr-title.yml`  | `pull-requests: read`                                                                           |
+| `reusable-validate-commits.yml`   | `contents: read`                                                                                |
 | `reusable-lint.yml`               | `contents: read`                                                                                |
 | `reusable-build-test.yml`         | `contents: read`                                                                                |
 | `reusable-claude.yml`             | `contents: read`, `pull-requests: read`, `issues: read`, `id-token: write`, `actions: read`     |
@@ -198,6 +200,42 @@ so every repo reports the same context —
 `pr-title / Validate PR title is a Conventional Commit` — which a single
 branch-protection rule can pin estate-wide. Input: `types` (newline-separated
 allow-list; defaults to the estate's Conventional Commit types).
+
+### `reusable-validate-commits.yml`
+
+```yaml
+# .github/workflows/validate-commits.yml
+name: Validate commits
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Required — see "Required caller permissions" above. The check checks out the
+# repo to read the commit range, so it needs contents:read. Do NOT pass
+# secrets: inherit — this reusable declares no secrets (same trust model as
+# reusable-validate-pr-title.yml).
+permissions:
+  contents: read
+
+jobs:
+  commits: # ← keep this job id stable across the estate (see below)
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-commits.yml@v1
+```
+
+**Required-check context (A-400 / A-405).** The reusable job is named
+`Validate commits are Conventional Commits`, and a reusable-workflow check
+renders as `<caller-job-id> / <job-name>`. Use the caller job id **`commits`**
+so every repo reports the same context —
+`commits / Validate commits are Conventional Commits` — which a single
+branch-protection rule can pin estate-wide.
+
+**Ruleset.** Floats [`@acme-skunkworks/commitlint-config`](https://www.npmjs.com/package/@acme-skunkworks/commitlint-config)
+to latest on every run (public npm, no registry auth) and lints
+`github.event.pull_request.base.sha..head.sha`. Types live in that package —
+they are intentionally **not** a workflow input, so this gate and the local
+husky pre-push hook cannot drift. Merge / revert / fixup / squash subjects rely
+on commitlint's `defaultIgnores`. Input: `node-version` (default `"22"`).
 
 ### `reusable-lint.yml`
 
