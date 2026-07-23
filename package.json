@@ -1,6 +1,6 @@
 {
   "name": "@acme-skunkworks/shared-workflows",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "description": "Reusable GitHub Actions workflows shared across the Acme Skunkworks estate.",
   "keywords": [
