@@ -5,12 +5,12 @@ name: CI
 # + bats apparatus (see CLAUDE.md): this repo holds reusable workflows, not a
 # package.
 #
-# The PR-title check is INLINE here rather than calling this repo's own
-# reusable-validate-pr-title.yml: the org enforces `sha_pinning_required`, which
-# rejects local `uses: ./…` reusable refs (startup_failure), and a cross-repo
-# self-reference is circular before the first tagged SHA exists. Consumers DO
-# reference the reusable workflow — by cross-repo `@<sha>`, which is compliant.
-# See CLAUDE.md "Why the PR-title check is inline".
+# The PR-title and commits checks are INLINE here rather than calling this
+# repo's own reusable-validate-*.yml: the org enforces `sha_pinning_required`,
+# which rejects local `uses: ./…` reusable refs (startup_failure), and a
+# cross-repo self-reference is circular before the first tagged SHA exists.
+# Consumers DO reference the reusable workflows — by cross-repo `@v1`, which is
+# compliant. See CLAUDE.md "Why the PR-title check is inline".
 
 on:
   pull_request:
@@ -53,6 +53,49 @@ jobs:
             build
             style
             revert
+
+  commits:
+    # Mirrors reusable-validate-commits.yml (A-981) so this repo gates its own
+    # PRs the same way consumers will. The job name is the estate-canonical
+    # status-check string (A-400/405) — keep it stable.
+    name: Validate commits are Conventional Commits
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      HUSKY: 0
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: 📥 Install commitlint (float latest)
+        run: |
+          set -euo pipefail
+          GATE_DIR="${RUNNER_TEMP}/commitlint-gate"
+          mkdir -p "$GATE_DIR"
+          npm install --prefix "$GATE_DIR" --no-fund --no-audit \
+            @commitlint/cli \
+            @acme-skunkworks/commitlint-config
+          echo "GATE_DIR=${GATE_DIR}" >> "$GITHUB_ENV"
+
+      - name: 🔠 Lint commits (base..head)
+        env:
+          NODE_PATH: ${{ env.GATE_DIR }}/node_modules
+        run: |
+          set -euo pipefail
+          "${GATE_DIR}/node_modules/.bin/commitlint" \
+            --extends @acme-skunkworks/commitlint-config \
+            --from "${{ github.event.pull_request.base.sha }}" \
+            --to "${{ github.event.pull_request.head.sha }}" \
+            --verbose
 
   workflows:
     name: 📝 YAML & Workflows
@@ -177,7 +220,7 @@ jobs:
     # job and fails if any of them failed or was cancelled. See docs/go-no-go-gate.md
     # for the canonical consumer pattern (this repo dogfoods inline per CLAUDE.md).
     name: GO/NO GO # job name = check_run.name = the required check — keep stable
-    needs: [pr-title, workflows, markdown, changelog]
+    needs: [pr-title, commits, workflows, markdown, changelog]
     # MANDATORY: without `always()` the aggregator skips whenever a needed job
     # fails, so the gate check-run never reports and merges block forever.
     if: ${{ always() }}

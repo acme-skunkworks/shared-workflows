@@ -46,24 +46,29 @@ below.
 Rulesets here apply to **org** repositories only
 (`acme-skunkworks/<repo>`). Personal-account consumers are out of scope.
 
-## The `pr-title` context has two forms — pick the one your repo emits
+## The Conventional-Commit contexts have two forms — pick the ones your repo emits
 
 A reusable-workflow check renders as `<caller-job-id> / <job-name>`, so the
-required context differs by **how** a repo runs the PR-title check:
+required context differs by **how** a repo runs each Conventional-Commit check:
 
-| Repo                                                                                | Emitted context                                         |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **Consumers** (call `reusable-validate-pr-title.yml` with caller job id `pr-title`) | `pr-title / Validate PR title is a Conventional Commit` |
-| **`shared-workflows` itself** (dogfoods the check **inline** in `ci.yml`)           | `Validate PR title is a Conventional Commit`            |
+| Check    | Repo                                               | Emitted context                                         |
+| -------- | -------------------------------------------------- | ------------------------------------------------------- |
+| PR title | **Consumers** (caller job id `pr-title`)           | `pr-title / Validate PR title is a Conventional Commit` |
+| PR title | **`shared-workflows` itself** (inline in `ci.yml`) | `Validate PR title is a Conventional Commit`            |
+| Commits  | **Consumers** (caller job id `commits`)            | `commits / Validate commits are Conventional Commits`   |
+| Commits  | **`shared-workflows` itself** (inline in `ci.yml`) | `Validate commits are Conventional Commits`             |
 
-`trunk.json` carries the **consumer** form (the estate norm). When applying to
-`shared-workflows` itself, swap that one context to the bare inline form first —
+`trunk.json` carries the **consumer** forms (the estate norm). When applying to
+`shared-workflows` itself, swap each context to the bare inline form first —
 e.g.:
 
 ```bash
 jq '(.rules[] | select(.type=="required_status_checks").parameters.required_status_checks[]
-     | select(.context|test("Conventional Commit")).context)
-    = "Validate PR title is a Conventional Commit"' \
+     | select(.context|test("Validate PR title is a Conventional Commit")).context)
+    = "Validate PR title is a Conventional Commit"
+  | (.rules[] | select(.type=="required_status_checks").parameters.required_status_checks[]
+     | select(.context|test("Validate commits are Conventional Commits")).context)
+    = "Validate commits are Conventional Commits"' \
   .github/rulesets/trunk.json > /tmp/trunk-shared-workflows.json
 ```
 

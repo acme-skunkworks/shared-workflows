@@ -1,0 +1,111 @@
+name: Reusable / Validate commits
+
+# Reusable (workflow_call) Conventional-Commits gate over a PR's base..head
+# range (A-981 / A-823). Companion to reusable-validate-pr-title.yml — that
+# workflow lints the PR title (the squash subject); this one lints every commit
+# on the branch so merge-commit history cannot feed release-please /
+# changelog tooling with unvalidated `wip` / `fix review` subjects.
+#
+# The `pull_request` trigger stays in the CALLER stub. Include `synchronize`
+# so the check re-runs when new commits land.
+#
+# Ruleset: floats `@acme-skunkworks/commitlint-config` to latest (public npm,
+# no registry auth) so the CI gate and the local husky pre-push hook
+# (A-982) share one ruleset with zero drift. Types are intentionally NOT a
+# workflow input — they live in the package. Merge / revert / fixup / squash
+# subjects rely on config-conventional's `defaultIgnores`; bot commits are
+# validated like any other (A-823 — make bot templates Conventional via A-980
+# before making this a required check).
+#
+# STATUS-CHECK CONTEXT (A-400 / A-405): the job below is named
+# `Validate commits are Conventional Commits` — the estate-canonical string a
+# single required-check rule can pin across every repo. A reusable-workflow
+# check renders as `<caller-job-id> / <job-name>`, so callers MUST use a
+# consistent caller job id. This estate uses `commits`, giving the stable
+# context `commits / Validate commits are Conventional Commits`. Do NOT rename
+# either half.
+#
+# REQUIRED CALLER PERMISSIONS (A-621): a called reusable workflow's job cannot be
+# granted more than the caller's GITHUB_TOKEN holds. Under the org default
+# `default_workflow_permissions: read`, a caller with no `permissions:` block
+# hands this workflow a read-only token, the `commits` job below can't get the
+# `contents: read` it needs, and the run dies at compile time with a
+# `startup_failure`. So the caller MUST declare the scope this job needs.
+#
+# TRUST MODEL: same as reusable-validate-pr-title.yml — no `workflow_call.secrets`
+# block, callers must NOT pass `secrets: inherit` (mutable-`@v1` trust boundary).
+# Only the auto-provided GITHUB_TOKEN is used (via checkout).
+#
+# Consume from another repo (floating major tag `@v1` — see README):
+#
+#   permissions:
+#     contents: read
+#   jobs:
+#     commits:
+#       uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-validate-commits.yml@v1
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: >-
+          Node.js major version for the ephemeral commitlint install. Defaults
+          to the estate floor (22). Not read from the consumer's .nvmrc — this
+          gate installs only commitlint + the shared config, not the consumer
+          lockfile.
+        type: string
+        required: false
+        default: "22"
+
+# Deny all token scopes at the workflow root; the job below grants only the
+# contents:read it needs (least privilege; zizmor-clean).
+permissions: {}
+
+jobs:
+  commits:
+    name: Validate commits are Conventional Commits
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Keep husky dormant if a floated package's prepare ever shells out to it
+      # (estate CI convention — same as reusable-lint / changelog-enrich).
+      HUSKY: 0
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Full history so both base.sha and head.sha resolve for the range.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: 📥 Install commitlint (float latest)
+        # Ephemeral prefix — never mutates the consumer's tree / lockfile.
+        # Floats both packages to latest so a ruleset publish takes effect on
+        # the next CI run with no per-repo bump PR (A-823 version strategy).
+        run: |
+          set -euo pipefail
+          GATE_DIR="${RUNNER_TEMP}/commitlint-gate"
+          mkdir -p "$GATE_DIR"
+          npm install --prefix "$GATE_DIR" --no-fund --no-audit \
+            @commitlint/cli \
+            @acme-skunkworks/commitlint-config
+          echo "GATE_DIR=${GATE_DIR}" >> "$GITHUB_ENV"
+
+      - name: 🔠 Lint commits (base..head)
+        # NODE_PATH so --extends resolves the floated config from GATE_DIR
+        # while cwd stays the checked-out repo (git needs it for the range).
+        env:
+          NODE_PATH: ${{ env.GATE_DIR }}/node_modules
+        run: |
+          set -euo pipefail
+          "${GATE_DIR}/node_modules/.bin/commitlint" \
+            --extends @acme-skunkworks/commitlint-config \
+            --from "${{ github.event.pull_request.base.sha }}" \
+            --to "${{ github.event.pull_request.head.sha }}" \
+            --verbose

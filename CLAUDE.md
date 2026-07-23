@@ -34,6 +34,7 @@ and dogfood them.
 │   ├── reusable-claude.yml              # PRODUCT: interactive @claude
 │   ├── reusable-claude-code-review.yml  # PRODUCT: PR review
 │   ├── reusable-validate-pr-title.yml   # PRODUCT: conventional PR title
+│   ├── reusable-validate-commits.yml    # PRODUCT: conventional commits (base..head, A-981)
 │   ├── reusable-lint.yml                # PRODUCT: coarse lint bundle (Layer 2)
 │   ├── reusable-build-test.yml          # PRODUCT: coarse build/test bundle (Layer 2)
 │   ├── reusable-pkg-release.yml         # PRODUCT: build-once → npm OIDC + Packages mirror (Layer 2)
@@ -43,7 +44,7 @@ and dogfood them.
 │   ├── changelog-enrich.yml             # self-host: post-merge enrich caller (A-800)
 │   ├── claude.yml                       # self-host: inline @claude on THIS repo
 │   ├── claude-code-review.yml           # self-host: inline PR review on THIS repo
-│   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title
+│   └── ci.yml                           # self-CI: actionlint + yamllint + markdownlint + inline PR-title + commits
 └── dependabot.yml                       # weekly grouped github-actions + npm bumps
 ```
 
@@ -156,19 +157,21 @@ reusable workflows stay few and pay setup once. See `.github/actions/README.md`.
   `sha_pinning_required` reason as the inline workflows below. They are authored
   here and consumed cross-repo by `@<sha>`; Layer 2 (A-415/416) wires them.
 
-### Why the PR-title check is inline (and there are no `./` callers)
+### Why the PR-title and commits checks are inline (and there are no `./` callers)
 
 The org enforces **`sha_pinning_required`**, which rejects local
 `uses: ./.github/workflows/…` reusable references — they aren't SHA-pinnable, so
 they fail at startup ([community #170337](https://github.com/orgs/community/discussions/170337)).
 A cross-repo self-reference (`acme-skunkworks/shared-workflows/…@<sha>`) is
 circular before the first tagged SHA exists. So this repo does **not** consume
-its own reusable workflows; `ci.yml` inlines the PR-title check instead (a
-SHA-pinned copy of `reusable-validate-pr-title.yml`'s step, same canonical job
-name). Keep the inline copy in sync if the reusable one changes.
+its own reusable workflows; `ci.yml` inlines the PR-title and commits checks
+instead (SHA-pinned copies of `reusable-validate-pr-title.yml` /
+`reusable-validate-commits.yml`, same canonical job names). Keep the inline
+copies in sync if the reusable ones change.
 
 Consumers are unaffected: they reference the reusable workflows by cross-repo
-`@<sha>`, which **is** SHA-pinning compliant.
+`@v1`, which **is** compliant (reusable-workflow refs are tag-exempt under
+`sha_pinning_required`).
 
 ### Why the Claude workflows are inline too
 
@@ -186,8 +189,8 @@ the real `pull_request` trigger. Both also carry the A-646 empty-token guard ste
 required secret is that token, **not** `ANTHROPIC_API_KEY`), and the review copy
 carries the A-646 `github.actor != 'dependabot[bot]'` skip (a Dependabot run can't
 read Actions secrets, so it would authenticate with an empty token). **Keep these
-in sync with their `reusable-*` counterparts** — same rule as the inline PR-title
-gate.
+in sync with their `reusable-*` counterparts** — same rule as the inline
+PR-title / commits gates.
 
 ### Status-check context (A-400 / A-405)
 
@@ -197,6 +200,11 @@ as `<caller-job-id> / <job-name>`, so the caller job id must be **`pr-title`**
 everywhere, giving the estate-canonical context
 `pr-title / Validate PR title is a Conventional Commit` that one required-check
 rule pins across the estate. Do **not** rename either half.
+
+`reusable-validate-commits.yml`'s job is named
+`Validate commits are Conventional Commits`; callers must use job id
+**`commits`**, giving
+`commits / Validate commits are Conventional Commits`. Same rename ban.
 
 ## Pinning
 
@@ -331,7 +339,9 @@ gitignored).
 
 The repo squash-merges and uses the PR title + description as the merge message,
 so the PR title must be a Conventional Commit (enforced by the inline `pr-title`
-job in `ci.yml`; consumers use `reusable-validate-pr-title.yml`).
+job in `ci.yml`; consumers use `reusable-validate-pr-title.yml`). Every commit
+on a PR branch is also linted (inline `commits` job; consumers use
+`reusable-validate-commits.yml@v1`).
 Never push to `main` directly — branch and open a PR.
 
 ### CodeRabbit review + the `skip-review` label (A-667)
