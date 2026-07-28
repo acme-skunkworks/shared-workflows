@@ -22,6 +22,7 @@ name: Reusable / Claude Code Review
 #     contents: read
 #     pull-requests: write # Post the review comment
 #     issues: read
+#     actions: read # Install claude-code-action's github_ci MCP server (A-1105)
 #     id-token: write # OIDC token exchange (getOidcToken) — required, not optional
 #   jobs:
 #     claude-review:
@@ -88,6 +89,19 @@ jobs:
       contents: read
       pull-requests: write
       issues: read
+      # claude-code-action offers Claude a `github_ci` MCP server (get_ci_status,
+      # get_workflow_run_details, download_job_log) and keeps those tools in
+      # --allowedTools unconditionally. Without `actions: read` the action logs
+      # "The github_ci MCP server requires 'actions: read' permission. Skipping CI
+      # server installation." and Claude is left holding tool names backed by no
+      # server. Granting the scope installs it, so a review can read the PR's CI
+      # status instead of guessing (A-1105). Read-only, and the narrowest scope
+      # that satisfies the action's own check.
+      #
+      # NB: a called reusable workflow's job cannot hold more than the CALLER's
+      # token grants (see A-621 above), so the caller stub must declare
+      # `actions: read` too — this line alone is not enough.
+      actions: read
       # Required: claude-code-action exchanges an OIDC token for its short-lived
       # GitHub token (getOidcToken → setupGitHubToken). Removing it fails the run
       # with "Could not fetch an OIDC token" — it is NOT just for publishing, so
@@ -173,3 +187,67 @@ jobs:
           track_progress: ${{ inputs.track_progress }}
           use_sticky_comment: ${{ inputs.use_sticky_comment }}
           claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github_comment__update_claude_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"'
+
+      - name: 🔎 Surface the Claude failure (A-1105)
+        # The step above runs the SDK with `show_full_output: false` (the secure
+        # default) and prints only "Running Claude Code via SDK (full output
+        # hidden for security)…". When the SDK errors, ALL a maintainer sees is
+        # the annotation `Claude execution failed: result is_error:true` — the
+        # actual message is written to the execution log and then never read
+        # back. On release-orchestrator that turned an expired
+        # CLAUDE_CODE_OAUTH_TOKEN into an 8-day silent outage that was
+        # misdiagnosed twice, because the only visible artefact was an unrelated
+        # zero-byte `curl` body from the action's POST-JOB token revocation
+        # (`DELETE /installation/token` — a red herring; an empty body is the
+        # CORRECT response there, and it is logged after the job has failed).
+        #
+        # So: on failure, pull the named result fields back out. Deliberately
+        # NOT `show_full_output: true` and NOT a dump of the file — the log also
+        # holds the prompt and the PR diff. Only the result record's scalar
+        # fields plus its `result`/`error` message are echoed, truncated, which
+        # is enough to tell an auth rejection from a crash from a real review
+        # failure while keeping the action's security default intact.
+        #
+        # The tell for a credential rejection is `num_turns: 1` with
+        # `total_cost_usd: 0` — it died at or before the first billable call.
+        if: failure() && steps.claude-review.conclusion == 'failure'
+        env:
+          # Prefer the action's own output; fall back to the documented default
+          # path in case a crash left the output unset.
+          EXECUTION_FILE: ${{ steps.claude-review.outputs.execution_file }}
+        run: |
+          set -uo pipefail
+          file="${EXECUTION_FILE:-}"
+          [ -n "$file" ] || file="${RUNNER_TEMP}/claude-execution-output.json"
+
+          if [ ! -f "$file" ]; then
+            echo "::warning::No Claude execution log at '${file}' — the action failed before writing one (A-1105)."
+            exit 0
+          fi
+
+          # The log is an array of SDK stream messages; the last `type: result`
+          # record carries the outcome. Tolerate a partial/!array write.
+          summary=$(jq -r '
+            (if type == "array" then . else [.] end)
+            | map(select(type == "object" and .type == "result"))
+            | last
+            | if . == null then
+                "no result record in the execution log"
+              else
+                "subtype=\(.subtype // "?") is_error=\(.is_error // "?") num_turns=\(.num_turns // "?") total_cost_usd=\(.total_cost_usd // "?")\nmessage: \(.result // .error // "(no message field)")"
+              end
+          ' "$file" 2>/dev/null | head -c 2000)
+
+          if [ -z "$summary" ]; then
+            echo "::warning::Claude execution log at '${file}' was unparseable JSON (A-1105)."
+            exit 0
+          fi
+
+          echo "::group::Claude execution result"
+          printf '%s\n' "$summary"
+          echo "::endgroup::"
+
+          # Annotations are single-line: fold newlines into the %0A escape so the
+          # whole summary survives onto the run page next to the opaque
+          # "result is_error:true" the action emits.
+          printf '::error::Claude review failed — %s\n' "$(printf '%s' "$summary" | awk 'BEGIN{ORS="%0A"}1')"
