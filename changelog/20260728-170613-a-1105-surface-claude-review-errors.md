@@ -1,21 +1,22 @@
 ---
 title: Surface the real error when Claude Code Review fails
 release_note: A failed Claude review now reports the SDK's actual error message instead of an opaque "result is_error:true", and the reusable workflow requests actions:read so the github_ci MCP server installs.
-created_at: "2026-07-28T17:06:13Z"
-merged_at:
+created_at: '2026-07-28T17:06:13Z'
+merged_at: '2026-07-28T17:44:52Z'
 branch: a-1105-surface-claude-review-errors
-pr:
-commit:
+pr: 90
+commit: d992357
 merge_strategy:
 author: hello@robeasthope.com
 co_authors: []
 category: feature
 breaking: false
-issues: ["A-1105"]
+issues:
+  - A-1105
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 3
+  loc_added: 181
+  loc_removed: 0
   commits:
 ---
 
