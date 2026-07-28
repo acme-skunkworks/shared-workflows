@@ -42,6 +42,10 @@ jobs:
       contents: read
       pull-requests: write
       issues: read
+      # Install claude-code-action's github_ci MCP server rather than having it
+      # skipped — this dogfood copy runs the action directly, so it needs the
+      # scope for the same reason the reusable does (A-1105).
+      actions: read
       # Required: claude-code-action exchanges an OIDC token for its short-lived
       # GitHub token (getOidcToken → setupGitHubToken). Removing it fails the run
       # with "Could not fetch an OIDC token" — it is NOT just for publishing, so
