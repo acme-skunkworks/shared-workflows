@@ -130,3 +130,48 @@ jobs:
           track_progress: true
           use_sticky_comment: true
           claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment,mcp__github_comment__update_claude_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"'
+
+      - name: 🔎 Surface the Claude failure (A-1105)
+        # Kept in sync with the same step in reusable-claude-code-review.yml —
+        # see that file for the full rationale. In short: the step above runs the
+        # SDK with `show_full_output: false`, so an SDK failure surfaces as
+        # nothing but `Claude execution failed: result is_error:true` and the real
+        # message is written to the execution log and never read back. Without
+        # this step here too, PRs reviewed by THIS repo's inline copy keep the
+        # opaque failure that A-1105 exists to remove.
+        if: failure() && steps.claude-review.conclusion == 'failure'
+        env:
+          EXECUTION_FILE: ${{ steps.claude-review.outputs.execution_file }}
+        run: |
+          set -uo pipefail
+          file="${EXECUTION_FILE:-}"
+          [ -n "$file" ] || file="${RUNNER_TEMP}/claude-execution-output.json"
+
+          if [ ! -f "$file" ]; then
+            echo "::warning::No Claude execution log at '${file}' — the action failed before writing one (A-1105)."
+            exit 0
+          fi
+
+          summary=$(jq -r '
+            (if type == "array" then . else [.] end)
+            | map(select(type == "object" and .type == "result"))
+            | last
+            | if . == null then
+                "no result record in the execution log"
+              else
+                "subtype=\(.subtype // "?") is_error=\(.is_error // "?") num_turns=\(.num_turns // "?") total_cost_usd=\(.total_cost_usd // "?")\nmessage: \(.result // .error // "(no message field)")"
+              end
+          ' "$file" 2>/dev/null | head -c 2000)
+
+          if [ -z "$summary" ]; then
+            echo "::warning::Claude execution log at '${file}' was unparseable JSON (A-1105)."
+            exit 0
+          fi
+
+          echo "::group::Claude execution result"
+          printf '%s\n' "$summary"
+          echo "::endgroup::"
+
+          # Escape `%` FIRST, then CR, then fold LF — see the reusable for why.
+          printf '::error::Claude review failed — %s\n' \
+            "$(printf '%s' "$summary" | awk 'BEGIN{ORS="%0A"} { gsub(/%/, "%25"); gsub(/\r/, "%0D"); print }')"

@@ -24,7 +24,7 @@ stats:
 - A failure-only step that reads the named result fields back out of
   `claude-execution-output.json` and re-emits them as a `::error::` annotation.
   `claude-code-action` runs the SDK with `show_full_output: false` (the secure
-  default), so until now every SDK failure surfaced as nothing but
+  default), so, until now, every SDK failure surfaced as nothing but
   `Claude execution failed: result is_error:true` — the real message was written
   to the execution log and never read back. The step extracts only the result
   record's scalar fields and its `result`/`error` message, truncated; it
