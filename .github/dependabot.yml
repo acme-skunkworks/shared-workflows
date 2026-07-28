@@ -25,6 +25,11 @@ updates:
     groups:
       dev-dependencies:
         patterns: ["*"]
+    # `prefix-development` is set explicitly alongside `prefix`: this ecosystem
+    # is dev-only, and `prefix` on its own leaves development-dependency bumps
+    # on Dependabot's default subject rather than the Conventional `chore(…)`
+    # the commit gate expects (A-980 / A-823).
     commit-message:
       prefix: "chore"
+      prefix-development: "chore"
       include: scope
