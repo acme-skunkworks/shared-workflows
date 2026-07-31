@@ -33,6 +33,10 @@
           {
             "context": "pr-title / Validate PR title is a Conventional Commit",
             "integration_id": 15368
+          },
+          {
+            "context": "commits / Validate commits are Conventional Commits",
+            "integration_id": 15368
           }
         ]
       }
