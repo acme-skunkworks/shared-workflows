@@ -26,4 +26,3 @@ stats:
 - `.github/rulesets/trunk.json` — `allowed_merge_methods: ["merge","squash"]`
 - `docs/rulesets.md` — dual policy landed (no longer deferred to A-1177)
 - Re-vendor `send-it` **0.7.0** + refresh `AGENTS.md` (fan-outs paused, A-809)
-
