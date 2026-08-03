@@ -2,10 +2,10 @@
 title: Document dual merge policy for feature vs release/fan-out PRs
 release_note: ''
 created_at: '2026-08-03T18:20:25Z'
-merged_at:
+merged_at: '2026-08-03T20:02:51Z'
 branch: a-1176-update-send-it-derive-bump-claudemd-adr-for-merge-commits
-pr:
-commit:
+pr: 94
+commit: e6727e4
 merge_strategy:
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -14,9 +14,9 @@ breaking: false
 issues:
   - A-1176
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 7
+  loc_added: 86
+  loc_removed: 21
   commits:
 ---
 
