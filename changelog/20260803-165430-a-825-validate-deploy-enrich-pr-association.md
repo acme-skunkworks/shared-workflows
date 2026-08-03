@@ -31,9 +31,10 @@ merge commits (2 parents).
 
 Empirical validation (agent-skills historical merge commit `fc7400e`, PR #8):
 
-| Push SHA kind | Parent count | `commits/{sha}/pulls` | `merged_at` | `mergeCommit.oid` fallback |
-| ------------- | ------------ | --------------------- | ----------- | --------------------------- |
-| Squash merge  | 1            | Returns associated PR | Set         | Preferred for `commit` field; falls back to `github.sha` when unset |
-| Merge commit  | 2            | Returns PR #8         | Set         | Same |
+- **Squash merge** (1 parent): `commits/{sha}/pulls` returns the associated PR;
+  `merged_at` is set; prefer `mergeCommit.oid` for the `commit` field, fall back
+  to `github.sha` when unset.
+- **Merge commit** (2 parents): same association path — PR #8 returned with
+  `merged_at` set for `fc7400e`.
 
 No behaviour change — documentation only.
