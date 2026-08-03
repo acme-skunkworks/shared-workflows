@@ -252,6 +252,13 @@ jobs:
           # as a release needs it. Re-running an isolated publish job >24h later
           # finds it gone — re-run the whole workflow to rebuild it.
           retention-days: 1
+          # "Re-run all jobs" replays this job into a run that already holds an
+          # `npm-tarball` from the previous attempt, and upload-artifact FAILS on
+          # a name collision by default — which would break the documented
+          # re-run-all recovery path before it reached the publish legs at all
+          # (A-457). Overwriting is safe: the re-run rebuilds from the same
+          # GITHUB_SHA, so the replacement is the same artefact.
+          overwrite: true
 
   release:
     name: 🚀 Release (npm)
@@ -263,9 +270,11 @@ jobs:
     # rejected by GitHub before the OIDC token is mintable.
     environment: ${{ inputs.environment }}
     outputs:
-      # Reused by publish-github-packages so it gates on the same condition
-      # without re-detecting (true = version bumped, not yet tagged = publish).
+      # The npm leg's own decision (true = version bumped, not yet tagged).
       should_publish: ${{ steps.gate.outputs.publish }}
+      # The GitHub Packages mirror's decision. Deliberately a SEPARATE signal —
+      # see the gate step for why it cannot reuse `should_publish` (A-457).
+      mirror_publish: ${{ steps.gate.outputs.mirror_publish }}
     permissions:
       contents: write # Git tags + GitHub releases on publish
       id-token: write # OIDC for npm Trusted Publishing + provenance
@@ -318,13 +327,45 @@ jobs:
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
           tag="${TAG_PREFIX}${version}"
+
+          # The npm leg + tag steps: publish iff this version has no tag yet.
           if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
             publish=false
           else
             publish=true
           fi
-          echo "publish=$publish" >> "$GITHUB_OUTPUT"
-          echo "version: $version; tag $tag exists: $([ "$publish" = false ] && echo yes || echo no); publish: $publish"
+
+          # The GitHub Packages mirror needs its OWN signal; reusing `publish`
+          # made a mirror-only failure unrecoverable (A-457). The tag step below
+          # creates the very tag `publish` reads, so once the npm leg has gone
+          # green `publish` is false for that version for ever — the mirror job
+          # was then SKIPPED rather than retried, and a skip is not a failure, so
+          # notify-failure stayed quiet too. npm held the version, GitHub
+          # Packages never did, and nothing ever said so.
+          #
+          # So the mirror also fires when the tag exists but points at THIS run's
+          # commit — which is exactly a re-run of the release run ("Re-run all
+          # jobs" preserves GITHUB_SHA, and the tag is cut with
+          # `--target "$GITHUB_SHA"` below). It deliberately does NOT fire on a
+          # later push to the release branch: HEAD has moved on by then, so
+          # re-packing it would ship DIFFERENT bits under the same version and
+          # desync the two registries by content instead of by presence — worse
+          # than the gap it repairs. Recovery is "re-run the release run", never
+          # "push again"; the notify-failure runbook says so.
+          if [ "$publish" = true ]; then
+            mirror_publish=true
+          elif [ "$(git rev-list -n 1 "refs/tags/${tag}")" = "$GITHUB_SHA" ]; then
+            mirror_publish=true
+          else
+            mirror_publish=false
+          fi
+
+          {
+            echo "publish=$publish"
+            echo "mirror_publish=$mirror_publish"
+          } >> "$GITHUB_OUTPUT"
+          echo "version: $version; tag: $tag (exists: $([ "$publish" = false ] && echo yes || echo no))"
+          echo "publish: $publish; mirror_publish: $mirror_publish"
 
       # Download the exact tarball built in the unprivileged `build` job (A-328)
       # — this job never builds from source, so no build-time code runs alongside
@@ -449,16 +490,21 @@ jobs:
 
   # Secondary publish target (A-323). A SEPARATE job so `packages: write` is
   # scoped here and never granted to the `release` job. Runs only after npm
-  # publish succeeds (needs: release) and on the same gate + ref guard +
+  # publish succeeds (needs: release), on its own gate + the same ref guard +
   # environment. GitHub Packages has no OIDC Trusted-Publisher flow, so this leg
   # authenticates with the ephemeral per-job GITHUB_TOKEN; provenance is supplied
   # out-of-band by a GitHub-native attestation over the exact tarball the npm leg
   # shipped — never re-built from source.
+  #
+  # The gate is `mirror_publish`, NOT `should_publish` (A-457): the npm leg's own
+  # signal is consumed by the tag it creates, so it could never re-authorise this
+  # job after a mirror-only failure. `mirror_publish` adds exactly one case —
+  # a re-run of the release run itself. See the gate step for the full reasoning.
   publish-github-packages:
     name: 📦 Publish to GitHub Packages
     needs: release
     if: >-
-      needs.release.outputs.should_publish == 'true'
+      needs.release.outputs.mirror_publish == 'true'
       && inputs.publish-github-packages
       && github.event_name == 'push'
       && github.ref == format('refs/heads/{0}', inputs.release-branch)
@@ -507,28 +553,28 @@ jobs:
           echo "path=$tarball" >> "$GITHUB_OUTPUT"
           echo "Publishing tarball: $tarball"
 
-      - name: 🔏 Attest build provenance
-        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
-        with:
-          subject-path: ${{ steps.tb.outputs.path }}
-
-      # Inlined from the estate's publish-to-github-packages.sh (A-417). Hard-code
-      # the publish host and fail closed if the input drifts (A-330): the
-      # ephemeral GITHUB_TOKEN is sent as a bearer credential, so the host must
-      # never be data-driven. Idempotent against the explicit registry. No
-      # --provenance (that targets npmjs.org's attestation API only); the
-      # attestation above is the GitHub-native equivalent.
-      - name: 📦 Publish to GitHub Packages
+      # Decide whether this version is actually missing from GitHub Packages
+      # BEFORE attesting. `mirror_publish` authorises a re-run of the release run,
+      # which may replay a leg that already succeeded — attesting first would mint
+      # a throwaway Sigstore attestation on every such replay (A-457). The probe
+      # is the cheap per-registry state check the job gate cannot express.
+      #
+      # Hard-code the publish host and fail closed if the input drifts (A-330):
+      # the ephemeral GITHUB_TOKEN is sent as a bearer credential, so the host
+      # must never be data-driven. Pin the registry on the query too rather than
+      # leaning on the scoped .npmrc: a misconfigured scope would silently send
+      # `npm view` to public npm — where the version exists — so the skip path
+      # would fire forever and GitHub Packages would go permanently stale (A-307).
+      - name: 🔎 Is this version already on GitHub Packages?
+        id: probe
         working-directory: ${{ inputs.working-directory }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_PACKAGES_REGISTRY_URL: ${{ inputs.github-packages-registry-url }}
-          TARBALL: ${{ steps.tb.outputs.path }}
         run: |
           set -euo pipefail
           : "${NODE_AUTH_TOKEN:?NODE_AUTH_TOKEN is not set; setup-node (GitHub Packages) must run first}"
           : "${GITHUB_PACKAGES_REGISTRY_URL:?GITHUB_PACKAGES_REGISTRY_URL is not set}"
-          : "${TARBALL:?TARBALL is not set; the build job must npm pack and upload the tarball first}"
 
           readonly EXPECTED_REGISTRY="https://npm.pkg.github.com"
           if [ "$GITHUB_PACKAGES_REGISTRY_URL" != "$EXPECTED_REGISTRY" ]; then
@@ -539,16 +585,17 @@ jobs:
           NAME=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
 
-          # Pin the registry explicitly rather than leaning on the scoped .npmrc: a
-          # misconfigured scope would silently send `npm view` to public npm —
-          # where the version exists — so the skip path would fire forever and
-          # GitHub Packages would go permanently stale (A-307).
+          # Tell a genuine 404 ("not published yet" → publish) apart from a
+          # transient/auth failure — the latter must abort, never be mis-read as
+          # "missing" and certainly never as "present" (which would leave the
+          # mirror silently stale, the very A-457 failure this gate repairs).
           set +e
           view_output=$(npm view "$NAME@$VERSION" version --registry "$EXPECTED_REGISTRY" 2>&1)
           view_status=$?
           set -e
           if [ "$view_status" -eq 0 ] && [ -n "$view_output" ]; then
-            echo "Already published to GitHub Packages: $NAME@$VERSION — skipping."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "Already published to GitHub Packages: $NAME@$VERSION — nothing to do."
             exit 0
           fi
           if [ "$view_status" -ne 0 ] && ! printf '%s' "$view_output" | grep -qiE 'E404|not found'; then
@@ -556,6 +603,33 @@ jobs:
             printf '%s\n' "$view_output" >&2
             exit 1
           fi
+          echo "needed=true" >> "$GITHUB_OUTPUT"
+          echo "$NAME@$VERSION is missing from GitHub Packages — will attest and publish."
+
+      - name: 🔏 Attest build provenance
+        if: steps.probe.outputs.needed == 'true'
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: ${{ steps.tb.outputs.path }}
+
+      # Inlined from the estate's publish-to-github-packages.sh (A-417). Publishes
+      # the prebuilt tarball against the same hard-coded host the probe asserted.
+      # No --provenance (that targets npmjs.org's attestation API only); the
+      # attestation above is the GitHub-native equivalent.
+      - name: 📦 Publish to GitHub Packages
+        if: steps.probe.outputs.needed == 'true'
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARBALL: ${{ steps.tb.outputs.path }}
+        run: |
+          set -euo pipefail
+          : "${NODE_AUTH_TOKEN:?NODE_AUTH_TOKEN is not set; setup-node (GitHub Packages) must run first}"
+          : "${TARBALL:?TARBALL is not set; the build job must npm pack and upload the tarball first}"
+
+          readonly EXPECTED_REGISTRY="https://npm.pkg.github.com"
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
 
           echo "Publishing $NAME@$VERSION to GitHub Packages from $TARBALL..."
           npm publish "$TARBALL" --access public --registry "$EXPECTED_REGISTRY"
@@ -593,9 +667,19 @@ jobs:
             "## Likely cause & fix" \
             "- **Build & pack** — see the failing step in the run log." \
             "- **npm publish (OIDC)** — Trusted Publishing hiccup, or the version is already published. The publish step is idempotent, so a re-run usually clears a transient failure." \
-            "- **GitHub Packages mirror** — token/registry hiccup; the publish step is idempotent. Re-run failed jobs to retry just the mirror (this reuses the release job's publish decision)." \
+            "- **GitHub Packages mirror** — token/registry hiccup; the publish step is idempotent." \
             "" \
-            "Re-run from the Actions tab once resolved. This issue auto-comments on repeat failures instead of opening duplicates."
+            "## How to retry" \
+            "Re-run from the Actions tab **on this run**, either way:" \
+            "- **Re-run failed jobs** — cheapest, but only within 24h (the packed tarball" \
+            "  artifact expires after 1 day)." \
+            "- **Re-run all jobs** — rebuilds the tarball from the same commit and re-runs the mirror too." \
+            "" \
+            "**Do not push a new commit to retry.** The mirror only fires when the release" \
+            "tag points at the run's own commit, so a later push will not republish it — it" \
+            "would ship different bits under an already-published version." \
+            "" \
+            "This issue auto-comments on repeat failures instead of opening duplicates."
           )
           # Search the text portion only — GitHub's full-text search indexes emoji
           # unreliably, so matching on 🚨 risks opening a duplicate every failure.

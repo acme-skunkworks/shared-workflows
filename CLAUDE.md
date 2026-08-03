@@ -132,6 +132,30 @@ carries some unique rules:
   or bundle-only consumer with no `build` script (markdownlint-config, agent-skills)
   passes `build: false` — else the build step fails `ERR_PNPM_NO_SCRIPT`. `npm pack`
   still packs the tarball from the package sources regardless.
+- **The mirror has its own gate, `mirror_publish` (A-457).** The npm leg's
+  `should_publish` is the version-vs-tag check — and the `release` job **creates
+  that tag**, so it is false for that version for ever afterwards. Gating the
+  mirror on it meant a mirror-only failure could never be retried: the job was
+  **skipped**, and a skip is not a failure, so `notify-failure` stayed quiet while
+  npm held the version and GitHub Packages never did. `mirror_publish` is
+  `should_publish` **or** "the tag exists and points at this run's commit" — i.e.
+  a re-run of the release run, which preserves `GITHUB_SHA` (the tag is cut with
+  `--target "$GITHUB_SHA"`). It deliberately does **not** fire on a later push:
+  HEAD has moved on, so re-packing it would ship _different bits_ under an
+  already-published version. **The recovery path is re-running the release run,
+  never pushing again.** The mirror job then probes GitHub Packages for the
+  version and gates **both** the attestation and the publish on that, so a
+  redundant replay mints no throwaway Sigstore attestation.
+- **Do not move tag creation after the mirror.** The obvious alternative fix —
+  cut the tag only once both registries are done — breaks the release-orchestrator:
+  the tag's existence is what flips a merged release PR from `autorelease: pending`
+  to `tagged`, and until that flip `release-please release-pr` **aborts** for the
+  repo and opens no further release PRs. A mirror hiccup would become a total
+  release stall. See `orchestrate-releases.yml`'s reconcile step.
+- **`overwrite: true` on the tarball upload.** `upload-artifact` fails on a name
+  collision by default, and "Re-run all jobs" replays the build job into a run that
+  already holds `npm-tarball` from the first attempt — without this the documented
+  re-run-all recovery dies before reaching either publish leg.
 
 ## Composite actions (Layer 1)
 
