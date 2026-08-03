@@ -19,8 +19,8 @@ release gate pattern).
 | --------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------- |
 | `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.                                      | `CLAUDE_CODE_OAUTH_TOKEN` |
 | `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                                                     | `CLAUDE_CODE_OAUTH_TOKEN` |
-| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (still linted under dual merge policy; not the sole bump signal for feature merge commits — A-1176). | — (uses `GITHUB_TOKEN`)   |
-| `reusable-validate-commits.yml`   | Enforce Conventional Commits on every commit in a PR's `base..head` range (A-981) — the per-commit gate under feature merge commits. | — (uses `GITHUB_TOKEN`)   |
+| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (dual merge policy; not sole bump signal — A-1176).    | — (uses `GITHUB_TOKEN`)   |
+| `reusable-validate-commits.yml`   | Enforce Conventional Commits on every `base..head` commit (A-981; per-commit merge gate).     | — (uses `GITHUB_TOKEN`)   |
 | `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate (Layer 2). | — (uses `GITHUB_TOKEN`)   |
 | `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
 | `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
