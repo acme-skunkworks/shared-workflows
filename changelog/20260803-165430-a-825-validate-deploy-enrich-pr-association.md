@@ -2,10 +2,10 @@
 title: Document deploy enrich PR association under merge-commit history
 release_note: 'Comments in reusable-changelog-enrich.yml now spell out that commits/{sha}/pulls resolves the associated PR for both squash SHAs (1 parent) and merge commits (2 parents), validated empirically on agent-skills fc7400e / PR #8 (A-825).'
 created_at: '2026-08-03T16:54:30Z'
-merged_at:
+merged_at: '2026-08-03T17:06:56Z'
 branch: a-825-validate-changelog-authoring-changelogfinalise-enrichment
-pr:
-commit:
+pr: 93
+commit: 9e49dfa
 merge_strategy:
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -14,9 +14,9 @@ breaking: false
 issues:
   - A-825
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 2
+  loc_added: 58
+  loc_removed: 7
   commits:
 ---
 
