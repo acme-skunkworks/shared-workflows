@@ -66,10 +66,14 @@ registers its own caller filename as the npmjs.com Trusted Publisher.
 ## Branch protection
 
 `main` is the only protected branch. Human and consumer-token changes never push to it
-directly — they land via a squash-merged PR, gated on the integration-pinned `GO/NO GO`
-check. The **one** exception is approved, gated App-identity automation running under the
-road-runner-bot App (post-merge `changelog/**` write-back and release commits/tags), which
-holds an explicit ruleset bypass because GitHub Actions' own `GITHUB_TOKEN` cannot be a
+directly — they land via a PR, gated on the integration-pinned `GO/NO GO` check.
+**Dual merge policy (A-1176 / A-1175 / A-1177):** feature / ship PRs use **merge
+commits**; release-please version PRs and fan-out PRs stay **squash**; both
+`allow_merge_commit` and `allow_squash_merge` remain enabled (A-1177 owns the
+estate allow-flag / ruleset flip). The **one** exception to the PR path is
+approved, gated App-identity automation running under the road-runner-bot App
+(post-merge `changelog/**` write-back and release commits/tags), which holds an
+explicit ruleset bypass because GitHub Actions' own `GITHUB_TOKEN` cannot be a
 Trunk bypass actor (ADR 0004). See [`docs/go-no-go-gate.md`](docs/go-no-go-gate.md),
 [`docs/rulesets.md`](docs/rulesets.md), and
 [`docs/security-review-a422.md`](docs/security-review-a422.md) §4.

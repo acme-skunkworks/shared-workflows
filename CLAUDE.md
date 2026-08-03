@@ -361,11 +361,17 @@ gitignored).
 
 ## Git / PR flow
 
-The repo squash-merges and uses the PR title + description as the merge message,
-so the PR title must be a Conventional Commit (enforced by the inline `pr-title`
-job in `ci.yml`; consumers use `reusable-validate-pr-title.yml`). Every commit
-on a PR branch is also linted (inline `commits` job; consumers use
-`reusable-validate-commits.yml@v1`).
+**Dual merge policy (A-1176 / A-1175 / A-1177):** feature / ship PRs land as
+**merge commits**; release-please version PRs and fan-out PRs stay **squash**.
+Both `allow_merge_commit` and `allow_squash_merge` remain enabled (A-1177 owns
+flipping the estate allow-flags / ruleset — not this docs change).
+
+The PR title must still be a Conventional Commit (inline `pr-title` job in
+`ci.yml`; consumers use `reusable-validate-pr-title.yml`) — under squash it is
+the trunk subject; under merge commits it is not the sole bump signal.
+Every commit on a PR branch is linted (inline `commits` job; consumers use
+`reusable-validate-commits.yml@v1`) — that is the load-bearing gate when feature
+history merges intact.
 Never push to `main` directly — branch and open a PR.
 
 ### CodeRabbit review + the `skip-review` label (A-667)

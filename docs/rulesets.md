@@ -13,9 +13,15 @@ A single `branch` ruleset on `~DEFAULT_BRANCH` (`main`), `enforcement: active`:
 - **`deletion`** + **`non_fast_forward`** — the branch can't be deleted or
   force-pushed.
 - **`pull_request`** — every change lands via a PR (so direct pushes to `main` are
-  blocked), **squash-only** (`allowed_merge_methods: ["squash"]` — the PR title is
-  the released commit subject), `0` required approvals, no code-owner review (the
-  estate runs solo-maintainer, 0 approvals, no CODEOWNERS).
+  blocked), with `allowed_merge_methods` governing how. The checked-in
+  `trunk.json` is still **squash-only** today (`["squash"]`). The dual merge
+  policy (A-1176) is **feature / ship PRs → merge commits**; **release-please
+  version PRs + fan-out PRs → squash**; both allow-flags stay on (A-1177).
+  **A-1177** owns enabling merge commits and reconciling
+  `allowed_merge_methods` (and the matching repo allow-flags) — do **not** flip
+  `trunk.json` in the docs-only A-1176 PR. Until that lands, the live ruleset
+  remains squash-only; the prose here states the intended dual policy.
+  Approvals stay at `0`, no code-owner review (solo-maintainer, no CODEOWNERS).
 - **`required_status_checks`**, each **pinned to the GitHub Actions integration**
   (`integration_id: 15368`) so a forged commit status or a different App can't
   satisfy them (the anti-spoof requirement, A-418):
@@ -25,6 +31,9 @@ A single `branch` ruleset on `~DEFAULT_BRANCH` (`main`), `enforcement: active`:
   - **`pr-title / Validate PR title is a Conventional Commit`** — the estate-pinned
     Conventional-Commit title context (A-400/405), kept as its own required check
     because it also re-runs on title edits independently of the rest of CI.
+    Under merge commits the title is not the sole bump signal; the commits
+    check (`commits / Validate commits are Conventional Commits`) is the
+    per-commit gate for feature history.
 
 This folds the two rulesets that were previously live on this repo into one: the
 old `Trunk` (the real baseline) plus the redundant org-level `Protect main trunk`
