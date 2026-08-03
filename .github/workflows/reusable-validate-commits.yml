@@ -1,10 +1,14 @@
 name: Reusable / Validate commits
 
 # Reusable (workflow_call) Conventional-Commits gate over a PR's base..head
-# range (A-981 / A-823). Companion to reusable-validate-pr-title.yml — that
-# workflow lints the PR title (the squash subject); this one lints every commit
-# on the branch so merge-commit history cannot feed release-please /
-# changelog tooling with unvalidated `wip` / `fix review` subjects.
+# range (A-981 / A-823). Companion to reusable-validate-pr-title.yml.
+#
+# Dual merge policy (A-1176 / A-1175 / A-1177): feature / ship PRs use merge
+# commits, so every branch commit can land on trunk and feed release-please /
+# changelog tooling. This commitlint gate is the per-commit authority under
+# that policy — it rejects unvalidated `wip` / `fix review` subjects before
+# merge. The PR-title check remains useful (especially for squash release /
+# fan-out PRs) but is not a substitute for linting the commit range.
 #
 # The `pull_request` trigger stays in the CALLER stub. Include `synchronize`
 # so the check re-runs when new commits land.

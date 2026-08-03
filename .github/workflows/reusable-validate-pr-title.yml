@@ -1,9 +1,16 @@
 name: Reusable / Validate PR title
 
 # Reusable (workflow_call) version of the estate's conventional-PR-title check.
-# The repos squash-merge, so the PR title IS the squash subject release-please
-# parses to decide the semver bump (A-371) — a mistyped prefix silently ships
-# the wrong version. This guards the format.
+#
+# Dual merge policy (A-1176 / A-1175 / A-1177): feature / ship PRs use merge
+# commits; release-please version PRs and fan-out PRs stay squash. Both
+# allow_merge_commit and allow_squash_merge remain on (A-1177).
+#
+# This workflow still lints the PR title as a Conventional Commit — useful for
+# humans, send-it, and squash merges where the title becomes the trunk subject.
+# Under merge commits the PR title is NOT the sole bump signal: release-please
+# reads the commit history that lands on trunk, so per-commit Conventional
+# Commits (reusable-validate-commits.yml) are the load-bearing gate.
 #
 # The `pull_request` trigger stays in the CALLER stub; include `edited` so the
 # check re-runs when a title is corrected (the default set omits it).
