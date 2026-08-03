@@ -1,11 +1,11 @@
 ---
 title: Give the GitHub Packages mirror its own publish gate
 release_note: A GitHub Packages mirror failure can now be retried by re-running the release run — previously the mirror job was skipped for good once the npm leg had tagged the release, silently leaving the version on npm but never on GitHub Packages.
-created_at: "2026-08-03T11:06:30Z"
-merged_at:
+created_at: '2026-08-03T11:06:30Z'
+merged_at: '2026-08-03T11:20:39Z'
 branch: a-457-pkg-release-decouple-the-github-packages-mirror-from-the-npm
-pr:
-commit:
+pr: 92
+commit: 2cf5a7d
 merge_strategy:
 author: hello@robeasthope.com
 co_authors: []
@@ -14,9 +14,9 @@ breaking: false
 issues:
   - A-457
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 3
+  loc_added: 198
+  loc_removed: 27
   commits:
 ---
 
