@@ -7,10 +7,15 @@ name: Reusable / Changelog enrich
 # re-implement field transforms and does NOT depend on a committed or global
 # changelog skill (A-781).
 #
-# Trigger semantics (A-777): keyed to the feature PR's merge. Callers fire on
-# `push: [main]`; this job resolves the just-merged PR (merge commit →
-# associated PR), finds the dated entry by its `branch:` field, and fills the
-# post-merge metadata via env vars. Never `pull_request_target`.
+# Trigger semantics (A-777 / A-825): keyed to the feature PR's merge. Callers
+# fire on `push: [main]`; this job resolves the just-merged PR via
+# `GET commits/{sha}/pulls`, finds the dated entry by its `branch:` field, and
+# fills the post-merge metadata via env vars. Never `pull_request_target`.
+#
+# PR association works for both squash SHAs (1 parent — github.sha is the
+# squash commit on trunk) and merge commits (2 parents — validated on
+# agent-skills fc7400e / PR #8, A-825). `mergeCommit.oid` from `gh pr view` is
+# preferred for the `commit` field; fall back to github.sha when unset.
 #
 # Modes:
 #   enrich   — deploy targets. Resolve PR → `changelog-core enrich`. No version.
@@ -202,9 +207,13 @@ jobs:
           MERGE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          # Merge commit → associated PR (A-777). Prefer the first merged PR;
-          # a push with no associated PR (direct push, bot commit) is a clean
-          # no-op for enrich — also the App-token re-fire loop guard (A-821).
+          # Resolve associated PR via commits/{sha}/pulls (A-777 / A-825).
+          # Works for both squash SHAs (1 parent — MERGE_SHA is the squash
+          # commit on trunk) and merge commits (2 parents — e.g. agent-skills
+          # fc7400e / PR #8 returns the merged PR with merged_at set). Prefer
+          # the first merged PR; a push with no associated PR (direct push, bot
+          # commit) is a clean no-op for enrich — also the App-token re-fire
+          # loop guard (A-821).
           pulls_json="$(gh api \
             "repos/${{ github.repository }}/commits/${MERGE_SHA}/pulls" \
             -H "Accept: application/vnd.github+json")"
@@ -228,6 +237,8 @@ jobs:
 
           merged_at="$(printf '%s' "$full" | jq -r '.mergedAt // empty')"
           branch="$(printf '%s' "$full" | jq -r '.headRefName // empty')"
+          # mergeCommit.oid is preferred for the changelog commit field; fall
+          # back to github.sha (MERGE_SHA) when gh pr view leaves it unset.
           merge_sha="$(printf '%s' "$full" | jq -r '.mergeCommit.oid // empty')"
           if [ -z "$merge_sha" ]; then
             merge_sha="$MERGE_SHA"
