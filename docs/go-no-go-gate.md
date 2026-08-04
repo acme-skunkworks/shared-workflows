@@ -19,8 +19,20 @@ its own reusable workflows).
 
 ## Canonical aggregator
 
-Add one job to your `ci.yml`, with `needs:` listing every real job (the shared callers
-_and_ any local extras):
+Put this concurrency block on the workflow that hosts the aggregator (not inside a
+`reusable-*` callee — `concurrency` is caller-level and a `workflow_call` cannot set
+it for you):
+
+```yaml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel a RUNNING run — see Footguns. Cancelling only pending runs is safe:
+  # a pending run materialises no jobs and therefore no check-runs.
+  cancel-in-progress: false
+```
+
+Then add one job to your `ci.yml`, with `needs:` listing every real job (the shared
+callers _and_ any local extras):
 
 ```yaml
 go-no-go:
@@ -53,6 +65,32 @@ one coarse bundle or six fine ones — so it never forces the split (ADR 0001 §
 - **`if: always()` is mandatory.** Without it the aggregator inherits the default
   "skip if any `needs:` failed" behaviour, so on a real failure it skips, the check-run
   is never minted, and the ruleset's required check never reports.
+- **Concurrency must never cancel a running gate run (A-1100).** With
+  `cancel-in-progress: true`, a superseded run's `needs` all report `cancelled`; the
+  `always()` aggregator still executes; and the verdict — which allows only `success` or
+  `skipped` — mints a **failure** check-run for a run that never failed. Set
+  `cancel-in-progress: false` on the workflow that hosts `GO/NO GO`. Concurrency can then
+  only cancel a *pending* run, which has materialised no jobs and therefore mints no
+  check-runs at all. Cost is bounded — GitHub keeps at most one pending run per group and
+  collapses the rest, so a burst of four events costs two full runs, not four. This also
+  subsumes the narrower release-branch carve-out
+  (`github.head_ref != 'release-please--branches--main'`, A-961): `false` covers every
+  branch, not just `release-please--*`.
+- **`!cancelled()` on the aggregator is a gate bypass, not a fix.** A `skipped` check-run
+  is [treated as success](https://docs.github.com/en/pull-requests/reference/status-checks)
+  for required status checks, and cancelling a run needs only `actions: write` — which
+  every write-access collaborator holds. Skipping the aggregator on cancellation would
+  therefore let anyone merge failing code by clicking "Cancel workflow", forging the very
+  check the A-425 integration pin exists to make unforgeable. Keep `cancelled` out of the
+  verdict allowlist for the same reason: once concurrency cannot produce it, it can only
+  mean a genuine manual cancel or a job timeout, both of which must stay red.
+  (`cancelled()` is also
+  [documented-unreliable on supersession](https://github.com/actions/runner/issues/3041).)
+- **The gate must never go green off a run that skipped its real CI.** That principle
+  rules out other tempting shortcuts — for example scoping the `edited` trigger so only
+  some jobs re-run, which would leave the aggregator seeing all-`skipped` and going green
+  with no CI at all. Tightening the blanket `skipped` allowlist is tracked separately
+  (A-1103).
 - **Treat `skipped` against an allowlist.** A path-skipped job (e.g. on `release-please--*`
   PRs that touch only changelog paths) is a legitimate non-failure, so `skipped` passes
   the verdict. If a repo has jobs that should _never_ skip, tighten the `jq` to allow
@@ -64,6 +102,18 @@ one coarse bundle or six fine ones — so it never forces the split (ADR 0001 §
   back to **minting the check-run explicitly** with
   `POST /repos/{owner}/{repo}/check-runs` (`head_sha` = the PR head), which also needs
   `checks: write` and lets you attach custom annotations.
+
+## Canonical shape vs consumer drift
+
+The snippet above is the reference shape: pass `needs` through `env: NEEDS_JSON` (never
+interpolate `${{ toJSON(needs) }}` into the shell body — job names would otherwise be a
+template-injection surface), use `set -euo pipefail`, and restate
+`permissions: contents: read` on the aggregator job.
+
+Some template-lineage consumers still diverge (inline `toJSON` interpolation, missing
+`set -euo pipefail` and/or job-level `permissions:`) even while their comments claim to
+follow this reference verbatim. Closing that drift is a per-repo fan-out — it cannot live
+in a reusable workflow, for the same reason the gate itself cannot.
 
 ## Rollout
 
