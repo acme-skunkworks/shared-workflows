@@ -21,7 +21,7 @@ stats:
 
 ## Changed
 
-**Estate merge-commit cutover ([A-1177](https://linear.app/acme-skunkworks/issue/A-1177))**
+**Estate merge-commit cutover ([A-1177](https://linear.app/rheged-studio/issue/A-1177))**
 
 - `.github/rulesets/trunk.json` — `allowed_merge_methods: ["merge","squash"]`
 - `docs/rulesets.md` — dual policy landed (no longer deferred to A-1177)

@@ -1,6 +1,6 @@
 # Pre-GA security review — shared workflows (A-422)
 
-This is the sign-off record for [A-422](https://linear.app/acme-skunkworks/issue/A-422),
+This is the sign-off record for [A-422](https://linear.app/rheged-studio/issue/A-422),
 the pre-GA gate that declares the `reusable-*` workflows and Layer-1 composite actions
 generally available. It reviews the **finished** trust surface (the workflows were already
 authored and hardened — A-313/326/328/330/417/646), consciously blesses the floating-`@v1`
@@ -46,7 +46,7 @@ caller**, not here, because `workflow_call` cannot own them:
 Both are documented in the file header and in `SECURITY.md`. npm Trusted Publishing
 validates the **caller's** `workflow_ref`, not this callee, so it is **unproven by
 inspection** — it must be verified with **one live publish** before estate rollout
-([A-456](https://linear.app/acme-skunkworks/issue/A-456)).
+([A-456](https://linear.app/rheged-studio/issue/A-456)).
 
 ## 2. Surface — secrets flow across the caller boundary
 
@@ -84,7 +84,7 @@ Internal Layer-1 composite actions are referenced by full cross-repo path, SHA-p
 the `v1.5.0` tag SHA (`ba77002…`). **One divergence noted, deferred:**
 `reusable-pkg-release.yml:212/220` still pin `setup-project`/`build` to the pre-release SHA
 `d0a5949` rather than `ba77002 # v1.5.0`. This is within
-[A-618](https://linear.app/acme-skunkworks/issue/A-618)'s re-pin remit and is **not**
+[A-618](https://linear.app/rheged-studio/issue/A-618)'s re-pin remit and is **not**
 changed here (see [§8](#8-findings--follow-ups)). It is not a security regression — `d0a5949`
 is a real, immutable in-repo SHA — only a pin-consistency item.
 
@@ -148,7 +148,7 @@ consumer callers float on `@v1` ([§6](#6-floating-v1-auto-propagation--consciou
 
 ## 6. Floating-`@v1` auto-propagation — conscious sign-off
 
-Since [A-662](https://linear.app/acme-skunkworks/issue/A-662) (v1.0.3), consumer caller
+Since [A-662](https://linear.app/rheged-studio/issue/A-662) (v1.0.3), consumer caller
 stubs float on the `@v1` major tag rather than SHA-pinning each shared-workflow reference.
 [`move-floating-major.yml`](../.github/workflows/move-floating-major.yml) force-moves the
 lightweight `v1` ref onto each release commit (on `release: published`, `contents: write`,
@@ -195,8 +195,8 @@ with the floating-tag flow, not a registry bump.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `actions/checkout` v4.2.2 → v7.0.0 drift in `reusable-validate-payload.yml`                                                                | **Fixed in this PR.**                                                                                                           |
 | 2   | Missing A-646 empty-token guard for `ROADRUNNER_PRIVATE_KEY` in `reusable-changelog-enrich.yml`                                            | **Fixed in this PR.**                                                                                                           |
-| 3   | `reusable-pkg-release.yml:212/220` internal pins on `d0a5949` vs `ba77002 # v1.5.0`                                                        | **Deferred to [A-618](https://linear.app/acme-skunkworks/issue/A-618)** (its re-pin remit). Not a security regression.          |
+| 3   | `reusable-pkg-release.yml:212/220` internal pins on `d0a5949` vs `ba77002 # v1.5.0`                                                        | **Deferred to [A-618](https://linear.app/rheged-studio/issue/A-618)** (its re-pin remit). Not a security regression.            |
 | 4   | Live "Trunk" ruleset drifts from committed `trunk.json` (roadrunner-bot bypass actor; 2nd required check `validate-payload` vs `pr-title`) | **Open — reconcile the committed JSON to live** (or re-apply if the JSON is authoritative). Gate remains sound in the meantime. |
-| 5   | npm OIDC Trusted Publishing unproven by inspection                                                                                         | **Verify with one live publish — [A-456](https://linear.app/acme-skunkworks/issue/A-456).**                                     |
+| 5   | npm OIDC Trusted Publishing unproven by inspection                                                                                         | **Verify with one live publish — [A-456](https://linear.app/rheged-studio/issue/A-456).**                                       |
 
 Items 1–2 land here; 3–5 are tracked elsewhere. None blocks GA.

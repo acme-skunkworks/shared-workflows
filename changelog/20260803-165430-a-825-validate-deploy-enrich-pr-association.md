@@ -23,7 +23,7 @@ stats:
 ## Changed
 
 **Document deploy enrich PR association for multi-commit merge history
-([A-825](https://linear.app/acme-skunkworks/issue/A-825))** — the
+([A-825](https://linear.app/rheged-studio/issue/A-825))** — the
 `reusable-changelog-enrich.yml` resolve step already keyed off
 `GET commits/{sha}/pulls` then `gh pr view … mergeCommit` (A-777); comments now
 explicitly record that this path works for **both** squash SHAs (1 parent) and

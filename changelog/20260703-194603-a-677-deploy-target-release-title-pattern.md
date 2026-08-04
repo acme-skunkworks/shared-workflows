@@ -30,4 +30,4 @@ stats:
   v1.1.1). The pattern change makes the title round-trip; tags stay bare
   `vX.Y.Z` (`include-component-in-tag: false` is untouched). The same key is
   required in every `kind: deploy` target and is now documented as an onboarding
-  prerequisite ([A-677](https://linear.app/acme-skunkworks/issue/A-677)).
+  prerequisite ([A-677](https://linear.app/rheged-studio/issue/A-677)).

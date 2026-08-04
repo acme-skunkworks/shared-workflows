@@ -24,11 +24,11 @@ stats:
 
 - `.coderabbit.yaml` sets `reviews.high_level_summary_in_walkthrough: true` so the
   high-level summary stays available but no longer edits the PR description
-  ([A-1102](https://linear.app/acme-skunkworks/issue/A-1102)). Description edits
+  ([A-1102](https://linear.app/rheged-studio/issue/A-1102)). Description edits
   re-fire `pull_request.edited` and waste a full CI run for an unchanged SHA;
   comments do not.
 
 ## Changed
 
 - `CLAUDE.md` documents the new key in the estate review-profile section so a
-  hand re-sync ([A-778](https://linear.app/acme-skunkworks/issue/A-778)) treats it as intentional policy, not an accidental omission.
+  hand re-sync ([A-778](https://linear.app/rheged-studio/issue/A-778)) treats it as intentional policy, not an accidental omission.

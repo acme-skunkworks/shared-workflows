@@ -22,7 +22,7 @@ stats:
 ## Added
 
 **`reusable-changelog-enrich.yml`** — the estate's post-merge changelog enricher
-([A-793](https://linear.app/acme-skunkworks/issue/A-793)). Resolves the just-merged PR from the push SHA, runs
+([A-793](https://linear.app/rheged-studio/issue/A-793)). Resolves the just-merged PR from the push SHA, runs
 `pnpm exec changelog-core enrich` (and, for npm `mode: finalise`,
 `changelog-core finalise` only when the package version is untagged), then
 pushes **only** `changelog/**` with the repo's own `GITHUB_TOKEN`.
@@ -30,7 +30,7 @@ pushes **only** `changelog/**` with the repo's own `GITHUB_TOKEN`.
 Install uses `--frozen-lockfile --ignore-scripts`. No dependency on a committed
 or global changelog skill — `@acme-skunkworks/changelog-core` is the source of
 truth. Callers own concurrency; the reusable never declares top-level
-`concurrency:` ([A-621](https://linear.app/acme-skunkworks/issue/A-621)).
+`concurrency:` ([A-621](https://linear.app/rheged-studio/issue/A-621)).
 
 ## Changed
 

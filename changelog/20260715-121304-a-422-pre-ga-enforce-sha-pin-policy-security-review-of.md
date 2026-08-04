@@ -20,12 +20,12 @@ stats:
 
 ## Changed
 
-- `reusable-changelog-enrich.yml` gains the [A-646](https://linear.app/acme-skunkworks/issue/A-646) empty-token guard the two
+- `reusable-changelog-enrich.yml` gains the [A-646](https://linear.app/rheged-studio/issue/A-646) empty-token guard the two
   Claude workflows already carry: a `🚦 Guard` step fails fast when
   `ROADRUNNER_PRIVATE_KEY` is mapped but empty (a `required: true` secret only
   forces the caller to map it, not to supply a non-empty value), rather than
   failing opaquely during App-token minting and silently skipping the write-back
-  ([A-422](https://linear.app/acme-skunkworks/issue/A-422)).
+  ([A-422](https://linear.app/rheged-studio/issue/A-422)).
 - `reusable-validate-payload.yml` re-pins `actions/checkout` from the stale
   `v4.2.2` to the estate-current `v7.0.0` used by every other workflow — a
   SHA-pin consistency fix.

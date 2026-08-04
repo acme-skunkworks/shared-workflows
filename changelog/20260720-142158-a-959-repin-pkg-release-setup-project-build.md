@@ -29,4 +29,4 @@ stats:
 - Comment-only change: the pinned SHAs are unchanged (already at v1.5.1), so there is
   no behavioural change to the release/publish path. Verified that the v1.5.1 action
   content differs from `@d0a5949` only in comment/ticket-reference churn
-  ([A-959](https://linear.app/acme-skunkworks/issue/A-959)).
+  ([A-959](https://linear.app/rheged-studio/issue/A-959)).
