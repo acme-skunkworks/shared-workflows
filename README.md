@@ -1,7 +1,7 @@
 # shared-workflows
 
 > Reusable [GitHub Actions workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
-> shared across the Acme Skunkworks estate.
+> shared across the Rheged Studio estate.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 

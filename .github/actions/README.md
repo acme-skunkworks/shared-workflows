@@ -1,6 +1,6 @@
 # Composite actions (Layer 1)
 
-The pick-and-mix primitives of the Acme Skunkworks shared-CI model. Each
+The pick-and-mix primitives of the Rheged Studio shared-CI model. Each
 directory here is a composite action (`action.yml`) consumed cross-repo and
 SHA-pinned, e.g.:
 
