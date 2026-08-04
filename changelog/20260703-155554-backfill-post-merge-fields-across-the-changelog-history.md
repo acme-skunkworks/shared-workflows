@@ -22,5 +22,5 @@ stats:
 - Backfilled the post-merge frontmatter fields — `branch`, `pr`, `merged_at`,
   `commit`, `merge_strategy`, and `stats` — across all 14 dated entries
   (v0.1.0–v1.1.0), resolving each from its version release tag → merge PR so every
-  entry carries its real per-version metadata. Groundwork for [A-597](https://linear.app/acme-skunkworks/issue/A-597) Phase B, so the
+  entry carries its real per-version metadata. Groundwork for [A-597](https://linear.app/rheged-studio/issue/A-597) Phase B, so the
   backlog is fully enriched before forward orchestrator-driven enrichment goes live.

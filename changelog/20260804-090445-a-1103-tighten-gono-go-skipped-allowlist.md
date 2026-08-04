@@ -21,7 +21,7 @@ stats:
 
 ## Fixed
 
-- **`.github/workflows/ci.yml` ([A-1103](https://linear.app/acme-skunkworks/issue/A-1103))** —
+- **`.github/workflows/ci.yml` ([A-1103](https://linear.app/rheged-studio/issue/A-1103))** —
   the dogfooded `GO/NO GO` verdict now allowlists `skipped` only when
   `github.head_ref` matches `release-please--*`; everywhere else every needed
   job must report `success`. Previously a blanket `success or skipped` accept

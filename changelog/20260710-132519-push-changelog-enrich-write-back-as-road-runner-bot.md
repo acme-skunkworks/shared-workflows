@@ -22,9 +22,9 @@ stats:
 ## Fixed
 
 **`reusable-changelog-enrich.yml`** — write-back now authenticates as
-`road-runner-bot[bot]` ([A-821](https://linear.app/acme-skunkworks/issue/A-821)).
+`road-runner-bot[bot]` ([A-821](https://linear.app/rheged-studio/issue/A-821)).
 Actions cannot be a Trunk bypass actor on this org (HTTP 422; ADR 0004 /
-[A-794](https://linear.app/acme-skunkworks/issue/A-794)), so the job mints a
+[A-794](https://linear.app/rheged-studio/issue/A-794)), so the job mints a
 repo-scoped installation token via `actions/create-github-app-token` (same pin
 as the orchestrator) from org var `ROADRUNNER_CLIENT_ID` + secret
 `ROADRUNNER_PRIVATE_KEY`, then stages **only** `changelog/**` and pushes with

@@ -24,4 +24,4 @@ stats:
   exposed it as the `changelog:enrich` pnpm script. This lets the release
   orchestrator's enrichment cron fill this repo's post-merge changelog fields
   (`merged_at` / `commit` / `merge_strategy` / `pr` / `stats`) going forward, once
-  shared-workflows is added to the enrich matrix ([A-675](https://linear.app/acme-skunkworks/issue/A-675) Step 4).
+  shared-workflows is added to the enrich matrix ([A-675](https://linear.app/rheged-studio/issue/A-675) Step 4).

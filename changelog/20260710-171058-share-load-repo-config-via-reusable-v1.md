@@ -26,7 +26,7 @@ stats:
 - Layer-2 `reusable-load-repo-config.yml` — checkout + SHA-pinned composite;
   exposes all five config knobs as `workflow_call` outputs so callers float
   `@v1` without fighting `sha_pinning_required` on the action itself
-  ([A-779](https://linear.app/acme-skunkworks/issue/A-779)).
+  ([A-779](https://linear.app/rheged-studio/issue/A-779)).
 
 ## Changed
 

@@ -27,7 +27,7 @@ the merge), which means a consumer whose only required checks are `GO/NO GO` and
 `pr-title` has **nothing** validating the fanned payload — a broken
 `.claude/skills/**` bundle or an unparseable `.coderabbit.yaml` reaches
 `unstable` and the spine merges (and, on octavo, deploys) it. This closes that
-[A-714](https://linear.app/acme-skunkworks/issue/A-714) trap.
+[A-714](https://linear.app/rheged-studio/issue/A-714) trap.
 
 What it validates is **declared by the caller**, never auto-detected (a required
 check that silently skips an absent payload is the green-but-blind hole it exists

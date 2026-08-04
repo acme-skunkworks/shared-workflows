@@ -22,9 +22,9 @@ stats:
 
 ## Changed
 
-**In-repo enricher ([A-800](https://linear.app/acme-skunkworks/issue/A-800))** — this deploy target now calls
+**In-repo enricher ([A-800](https://linear.app/rheged-studio/issue/A-800))** — this deploy target now calls
 `reusable-changelog-enrich.yml` from `.github/workflows/changelog-enrich.yml` on
-push to `main` (`mode: enrich`, `secrets: inherit`), pinned at the [A-821](https://linear.app/acme-skunkworks/issue/A-821) merge
+push to `main` (`mode: enrich`, `secrets: inherit`), pinned at the [A-821](https://linear.app/rheged-studio/issue/A-821) merge
 SHA until `@v1` moves. Trunk bypass for `road-runner-bot` and selected access to
 `ROADRUNNER_*` credentials are applied so write-back can land on protected
 `main` (ADR 0004).

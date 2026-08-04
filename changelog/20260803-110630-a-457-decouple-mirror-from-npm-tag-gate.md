@@ -56,7 +56,7 @@ bits_ under an already-published version — desyncing the two registries by
 content rather than by presence, which is worse than the gap being repaired.
 
 Deferring tag creation until after the mirror — the fix originally proposed on
-[A-457](https://linear.app/acme-skunkworks/issue/A-457) — was rejected. The tag's existence is what flips a merged release PR from
+[A-457](https://linear.app/rheged-studio/issue/A-457) — was rejected. The tag's existence is what flips a merged release PR from
 `autorelease: pending` to `autorelease: tagged`, and until that flip
 `release-please release-pr` aborts for the repo and opens no further release
 PRs. A mirror hiccup would have stalled the package's releases entirely rather

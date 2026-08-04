@@ -21,6 +21,6 @@ stats:
 ## Changed
 
 - `.coderabbit.yaml` header and `CLAUDE.md` no longer claim a live verbatim fan-out
-  from this repo. Consumers own their copies ([A-778](https://linear.app/acme-skunkworks/issue/A-778));
+  from this repo. Consumers own their copies ([A-778](https://linear.app/rheged-studio/issue/A-778));
   this file remains the estate reference profile and a strict superset of skip
   conventions for any hand re-sync.

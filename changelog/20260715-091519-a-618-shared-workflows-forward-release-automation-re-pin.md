@@ -26,9 +26,9 @@ stats:
   `reusable-lint.yml` (`setup-project`, `eslint`, `lint-markdown`, `lint-yaml`,
   `changelog-validate`) and `reusable-build-test.yml` (`setup-project`, `build`,
   `typecheck`, `test-vitest`, `shellcheck`, `test-bats`)
-  ([A-618](https://linear.app/acme-skunkworks/issue/A-618)).
+  ([A-618](https://linear.app/rheged-studio/issue/A-618)).
 - `reusable-load-repo-config.yml` moves its `load-repo-config` pin off the
-  interim [A-779](https://linear.app/acme-skunkworks/issue/A-779) SHA onto the same v1.5.0 commit.
+  interim [A-779](https://linear.app/rheged-studio/issue/A-779) SHA onto the same v1.5.0 commit.
 
 No consumer-facing change: callers still float the reusable workflows at `@v1`,
 and the referenced composite-action content is byte-identical between v0.8.0 and

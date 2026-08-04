@@ -21,7 +21,7 @@ stats:
 ## Changed
 
 - The canonical `.coderabbit.yaml` grows from the `skip-review` denylist into the
-  estate's full CodeRabbit standard, ahead of the [A-712](https://linear.app/acme-skunkworks/issue/A-712)
+  estate's full CodeRabbit standard, ahead of the [A-712](https://linear.app/rheged-studio/issue/A-712)
   verbatim fan-out. It now also sets `language: en-GB` (British-English review
   prose), an explicit `reviews.profile: chill` (balanced signal-to-noise),
   `path_filters` excluding vendored/generated trees (`pnpm-lock.yaml`, `dist`,
@@ -34,4 +34,4 @@ stats:
 The three skip conventions (`!skip-review`, the `enrich entry for` title skip and
 the `road-runner-bot[bot]` username skip) are preserved verbatim so the fan-out
 can never regress a consumer. Dependabot PRs stay reviewed by design
-([A-732](https://linear.app/acme-skunkworks/issue/A-732)).
+([A-732](https://linear.app/rheged-studio/issue/A-732)).

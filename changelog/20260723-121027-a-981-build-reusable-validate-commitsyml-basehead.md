@@ -29,7 +29,7 @@ stats:
   `commitlint --from <base.sha> --to <head.sha>`. Same no-secrets trust model as
   `reusable-validate-pr-title.yml`; no top-level `concurrency:`. Estate-canonical
   status-check context:
-  `commits / Validate commits are Conventional Commits` ([A-981](https://linear.app/acme-skunkworks/issue/A-981);
+  `commits / Validate commits are Conventional Commits` ([A-981](https://linear.app/rheged-studio/issue/A-981);
   closes [shared-workflows#72](https://github.com/acme-skunkworks/shared-workflows/issues/72)).
 - Inline dogfood of the same steps in `ci.yml`, wired into the `GO/NO GO`
   aggregator (this repo cannot call its own reusables under

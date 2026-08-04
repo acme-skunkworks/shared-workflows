@@ -23,7 +23,7 @@ stats:
 ## Fixed
 
 - The npm ecosystem in `.github/dependabot.yml` set `prefix` but not `prefix-development`
-  ([A-980](https://linear.app/acme-skunkworks/issue/A-980)), so only production-dependency
+  ([A-980](https://linear.app/rheged-studio/issue/A-980)), so only production-dependency
   bumps were prefixed `chore`. Development-dependency bumps fell back to Dependabot's own
   default subject, which is not a Conventional Commit and would fail the commit gate once it
   becomes a required check.
