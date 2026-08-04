@@ -70,7 +70,7 @@ one coarse bundle or six fine ones — so it never forces the split (ADR 0001 §
   `always()` aggregator still executes; and the verdict — which allows only `success` or
   `skipped` — mints a **failure** check-run for a run that never failed. Set
   `cancel-in-progress: false` on the workflow that hosts `GO/NO GO`. Concurrency can then
-  only cancel a *pending* run, which has materialised no jobs and therefore mints no
+  only cancel a _pending_ run, which has materialised no jobs and therefore mints no
   check-runs at all. Cost is bounded — GitHub keeps at most one pending run per group and
   collapses the rest, so a burst of four events costs two full runs, not four. This also
   subsumes the narrower release-branch carve-out
