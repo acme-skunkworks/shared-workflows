@@ -1,11 +1,11 @@
 ---
 title: Tighten the GO/NO GO verdict's blanket skipped acceptance
-release_note: "The canonical GO/NO GO verdict now allowlists skipped only on release-please--* branches, so an all-skipped needs set can no longer mint a green gate with no CI behind it."
-created_at: "2026-08-04T09:04:45Z"
-merged_at:
+release_note: The canonical GO/NO GO verdict now allowlists skipped only on release-please--* branches, so an all-skipped needs set can no longer mint a green gate with no CI behind it.
+created_at: '2026-08-04T09:04:45Z'
+merged_at: '2026-08-04T09:18:33Z'
 branch: a-1103-tighten-the-gono-go-verdicts-blanket-skipped-acceptance
-pr:
-commit:
+pr: 98
+commit: 99afec0
 author: rob@acmeskunkworks.io
 co_authors: []
 category: fix
@@ -13,9 +13,9 @@ breaking: false
 issues:
   - A-1103
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 3
+  loc_added: 76
+  loc_removed: 21
   commits:
 ---
 
