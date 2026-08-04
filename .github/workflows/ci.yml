@@ -19,7 +19,26 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A-1100 / A-1101: never cancel a RUNNING run. A superseded run's `needs` all
+  # report `cancelled`, the always() aggregator below still executes, and its
+  # verdict mints a FALSE RED `GO/NO GO` — the one check the A-419 orchestrator
+  # polls and the A-425 ruleset requires. A red meaning "superseded" is
+  # indistinguishable from a red meaning "broken", which trains reviewers to
+  # discount the gate.
+  #
+  # With `false`, concurrency can only cancel a *pending* run. A pending run has
+  # materialised no jobs, so it mints no check-runs at all. Cost is bounded —
+  # GitHub keeps at most ONE pending run per group and collapses the rest, so a
+  # burst of four events costs two full runs, not four.
+  #
+  # Do NOT "fix" this by relaxing the verdict instead: see the aggregator's own
+  # comment for why `cancelled` must stay red and `!cancelled()` is a bypass.
+  #
+  # Subsumes A-961 (a cancelled release-please run cancelling the gate the
+  # orchestrator waits on), so the narrower
+  # `github.head_ref != 'release-please--branches--main'` carve-out is not
+  # needed here — this covers every branch, not just the release one.
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -236,7 +255,21 @@ jobs:
         # here would itself be unexpected — but treating it as pass keeps the
         # reference identical to the documented consumer pattern). `failure`,
         # `cancelled` and a null/empty result fail the gate.
+        #
+        # `cancelled` is deliberately NOT allowlisted (A-1100). Now that
+        # `cancel-in-progress: false` stops concurrency ever producing it, a
+        # cancelled need can only mean a genuine manual cancel or a job
+        # timeout — both of which MUST stay red.
+        #
+        # NEVER reach for `if: !cancelled()` on this job either. A skipped
+        # check-run counts as SUCCESS for required status checks, so skipping
+        # the aggregator would let anyone holding `actions: write` merge
+        # failing code by clicking "Cancel workflow" — forging the very gate
+        # the A-425 integration pin exists to make unforgeable.
         env:
+          # Read through `env:`, never interpolate into the shell body: job
+          # names reach this context from the workflow and would otherwise be a
+          # template-injection surface.
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
           set -euo pipefail
