@@ -1,14 +1,11 @@
 ---
 title: Move CodeRabbit summary into the walkthrough to stop CI thrash
-release_note: >-
-  CodeRabbit's high-level summary now lands in the walkthrough comment instead of
-  the PR description, so review-bot body edits no longer re-fire pull_request.edited
-  CI for an unchanged SHA.
+release_note: CodeRabbit's high-level summary now lands in the walkthrough comment instead of the PR description, so review-bot body edits no longer re-fire pull_request.edited CI for an unchanged SHA.
 created_at: '2026-08-04T08:20:27Z'
-merged_at:
+merged_at: '2026-08-04T08:31:38Z'
 branch: a-1102-stop-review-bots-re-triggering-full-ci-by-writing-into-the
-pr:
-commit:
+pr: 96
+commit: 06df201
 merge_strategy:
 author: rob@acmeskunkworks.io
 co_authors: []
@@ -17,9 +14,9 @@ breaking: false
 issues:
   - A-1102
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 3
+  loc_added: 47
+  loc_removed: 0
   commits:
 ---
 
