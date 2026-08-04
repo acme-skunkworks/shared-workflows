@@ -426,6 +426,11 @@ CodeRabbit's own defaults. Beyond the `skip-review` denylist it carries:
 - **`language: "en-GB"`** — review prose in British English, matching house style.
 - **`reviews.profile: "chill"`** — a balanced signal-to-noise default (fewer
   nitpicks than `assertive`, more than `quiet`).
+- **`reviews.high_level_summary_in_walkthrough: true`** (A-1102) — keeps the
+  high-level summary but places it in the walkthrough comment instead of the PR
+  description. Description edits re-fire `pull_request.edited` and waste a full
+  CI run for an unchanged SHA; comments do not. Consumers that omit this key
+  revert to CodeRabbit's default (summary in the description).
 - **Two more skips** under `auto_review`: an `ignore_title_keywords` entry
   (`"enrich entry for"`) and an `ignore_usernames` entry
   (`"road-runner-bot[bot]"`) silence the orchestrator's mechanical
