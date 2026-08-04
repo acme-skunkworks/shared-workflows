@@ -2,10 +2,10 @@
 title: Update Linear team name and workspace slug to Rheged Studio
 release_note: ''
 created_at: '2026-08-04T18:40:35Z'
-merged_at: ''
+merged_at: '2026-08-04T18:52:14Z'
 branch: a-1233-shared-workflows-update-linearteamname-linearworkspaceslug
-pr:
-commit:
+pr: 99
+commit: '5886699'
 author: rob@acmeskunkworks.io
 co_authors: []
 category: chore
@@ -13,9 +13,9 @@ breaking: false
 issues:
   - A-1233
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 36
+  loc_added: 88
+  loc_removed: 57
   commits:
 ---
 
