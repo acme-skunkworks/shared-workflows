@@ -46,10 +46,19 @@ go-no-go:
     - name: ⚖️ Verdict
       env:
         NEEDS_JSON: ${{ toJSON(needs) }}
+        HEAD_REF: ${{ github.head_ref }}
       run: |
         set -euo pipefail
+        # Allow `skipped` only on release-please path-skips; otherwise every
+        # needed job must have succeeded (A-1103).
+        if [[ "$HEAD_REF" == release-please--* ]]; then
+          ALLOWED='["success","skipped"]'
+        else
+          ALLOWED='["success"]'
+        fi
         echo "$NEEDS_JSON" \
-          | jq -e 'to_entries | all(.value.result == "success" or .value.result == "skipped")' >/dev/null \
+          | jq -e --argjson ok "$ALLOWED" \
+            'to_entries | all(.value.result as $r | $ok | index($r))' >/dev/null \
           || { echo "::error::a required check failed — refusing to go"; exit 1; }
         echo "All required checks passed — GO."
 ```
@@ -86,15 +95,14 @@ one coarse bundle or six fine ones — so it never forces the split (ADR 0001 §
   mean a genuine manual cancel or a job timeout, both of which must stay red.
   (`cancelled()` is also
   [documented-unreliable on supersession](https://github.com/actions/runner/issues/3041).)
-- **The gate must never go green off a run that skipped its real CI.** That principle
-  rules out other tempting shortcuts — for example scoping the `edited` trigger so only
-  some jobs re-run, which would leave the aggregator seeing all-`skipped` and going green
-  with no CI at all. Tightening the blanket `skipped` allowlist is tracked separately
-  (A-1103).
-- **Treat `skipped` against an allowlist.** A path-skipped job (e.g. on `release-please--*`
-  PRs that touch only changelog paths) is a legitimate non-failure, so `skipped` passes
-  the verdict. If a repo has jobs that should _never_ skip, tighten the `jq` to allow
-  `skipped` only for the expected job names rather than blanket-accepting it.
+- **The gate must never go green off a run that skipped its real CI (A-1103).** The
+  canonical verdict therefore allowlists `skipped` **only** on `release-please--*`
+  branches (path-skipped jobs on changelog-only PRs). On every other branch every
+  needed job must report `success` — an all-`skipped` `needs` set fails the gate. That
+  also rules out tempting shortcuts such as scoping the `edited` trigger so only some
+  jobs re-run (which would leave the aggregator seeing all-`skipped` and going green
+  with no CI at all). A repo that needs a tighter rule may further restrict by job name;
+  the branch-conditional allowlist is the estate default, not a deferred follow-up.
 - **The check name is load-bearing — keep it exactly `GO/NO GO`.** The job `name:` becomes
   `check_run.name`; the ruleset and the orchestrator match that literal. Spaces and `/`
   survive verbatim into the check-run name (`GO/NO GO` keeps both). If a future GitHub
@@ -105,10 +113,10 @@ one coarse bundle or six fine ones — so it never forces the split (ADR 0001 §
 
 ## Canonical shape vs consumer drift
 
-The snippet above is the reference shape: pass `needs` through `env: NEEDS_JSON` (never
-interpolate `${{ toJSON(needs) }}` into the shell body — job names would otherwise be a
-template-injection surface), use `set -euo pipefail`, and restate
-`permissions: contents: read` on the aggregator job.
+The snippet above is the reference shape: pass `needs` through `env: NEEDS_JSON` and
+`github.head_ref` through `env: HEAD_REF` (never interpolate `${{ toJSON(needs) }}` into
+the shell body — job names would otherwise be a template-injection surface), use
+`set -euo pipefail`, and restate `permissions: contents: read` on the aggregator job.
 
 Some template-lineage consumers still diverge (inline `toJSON` interpolation, missing
 `set -euo pipefail` and/or job-level `permissions:`) even while their comments claim to
