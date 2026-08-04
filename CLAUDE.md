@@ -10,7 +10,7 @@ repo-specific guidance follows below.
 
 ## Repo
 
-Home for the Acme Skunkworks estate's **reusable GitHub Actions workflows**
+Home for the Rheged Studio estate's **reusable GitHub Actions workflows**
 (`workflow_call`). One authoritative copy of each common workflow lives here;
 consumer repos keep thin caller stubs that point at it (SHA-pinned + Dependabot).
 This replaces the previous copy-paste-per-repo approach.
