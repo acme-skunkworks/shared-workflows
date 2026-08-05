@@ -13,5 +13,9 @@
   ],
   "followUpLabel": "",
   "followUpProject": "",
-  "followUpState": "Backlog"
+  "followUpState": "Backlog",
+  "deferNonBlocking": true,
+  "humanEnvelope": true,
+  "reviewIdleMinutes": 5,
+  "reviewWaitMaxMinutes": 20
 }
