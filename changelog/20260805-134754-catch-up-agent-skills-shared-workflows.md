@@ -1,13 +1,13 @@
 ---
-title: "Catch up agent-skills shared bundles to HEAD"
-release_note: ""
+title: Catch up agent-skills shared bundles to HEAD
+release_note: ''
 version:
-created_at: "2026-08-05T13:47:54Z"
-merged_at:
+created_at: '2026-08-05T13:47:54Z'
+merged_at: '2026-08-05T14:04:09Z'
 branch: a-1261-catch-up-agent-skills-shared-workflows
-pr:
-commit:
-author: "rob@acmeskunkworks.io"
+pr: 101
+commit: cfd856e
+author: rob@acmeskunkworks.io
 co_authors: []
 category: chore
 breaking: false
@@ -16,9 +16,9 @@ issues:
 affected_packages:
   - infrastructure
 stats:
-  files_changed:
-  loc_added:
-  loc_removed:
+  files_changed: 89
+  loc_added: 3512
+  loc_removed: 1205
 ---
 
 ## Changed
