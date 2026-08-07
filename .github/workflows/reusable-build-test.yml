@@ -139,6 +139,13 @@ on:
         type: boolean
         required: false
         default: true
+      setup-script:
+        description: >-
+          Optional package script run after install, before any build/test step
+          (e.g. codegen). Empty skips the step.
+        required: false
+        type: string
+        default: ""
 
 # Deny all token scopes at the workflow root; the job below grants only the
 # contents:read that checkout needs (least privilege; zizmor-clean).
@@ -180,11 +187,18 @@ jobs:
 
       - name: 🧰 Set up project
         # Every lane except shellcheck (preinstalled binary) runs via pnpm, so
-        # skip install only on a shellcheck-only run.
-        if: ${{ inputs.build || inputs.typecheck || inputs.test || inputs.bats }}
+        # skip install only on a shellcheck-only run. Also install when a
+        # setup-script is provided (codegen needs node_modules).
+        if: >-
+          ${{ inputs.build || inputs.typecheck || inputs.test || inputs.bats ||
+          inputs.setup-script != '' }}
         uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           node-version-file: ${{ inputs.node-version-file }}
+
+      - name: 🏗️ Setup script
+        if: inputs.setup-script != ''
+        run: pnpm run ${{ inputs.setup-script }}
 
       - name: 🏗️ Build check
         if: ${{ inputs.build }}

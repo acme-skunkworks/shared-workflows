@@ -15,18 +15,18 @@ release gate pattern).
 
 ## Available workflows
 
-| Workflow                          | Purpose                                                                                       | Secrets                   |
-| --------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------- |
-| `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.                                      | `CLAUDE_CODE_OAUTH_TOKEN` |
-| `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                                                     | `CLAUDE_CODE_OAUTH_TOKEN` |
-| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (dual merge policy; not sole bump signal — A-1176).    | — (uses `GITHUB_TOKEN`)   |
-| `reusable-validate-commits.yml`   | Enforce Conventional Commits on every `base..head` commit (A-981; per-commit merge gate).     | — (uses `GITHUB_TOKEN`)   |
-| `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate (Layer 2). | — (uses `GITHUB_TOKEN`)   |
-| `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
-| `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
-| `reusable-load-repo-config.yml`   | Load + allowlist-validate `infrastructure/repo-config.yaml` → job outputs (Layer 2, A-779).   | — (uses `GITHUB_TOKEN`)   |
-| `reusable-validate-payload.yml`   | Fan-out payload check — skills bundles and/or `.coderabbit.yaml` (Layer 2).                   | — (uses `GITHUB_TOKEN`)   |
-| `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).       | `ROADRUNNER_PRIVATE_KEY`  |
+| Workflow                          | Purpose                                                                                                                         | Secrets                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.                                                                        | `CLAUDE_CODE_OAUTH_TOKEN` |
+| `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                                                                                       | `CLAUDE_CODE_OAUTH_TOKEN` |
+| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (dual merge policy; not sole bump signal — A-1176).                                      | — (uses `GITHUB_TOKEN`)   |
+| `reusable-validate-commits.yml`   | Enforce Conventional Commits on every `base..head` commit (A-981; per-commit merge gate).                                       | — (uses `GITHUB_TOKEN`)   |
+| `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate, optional Prettier + setup-script (Layer 2). | — (uses `GITHUB_TOKEN`)   |
+| `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).                                                | — (uses `GITHUB_TOKEN`)   |
+| `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).                                    | — (OIDC + `GITHUB_TOKEN`) |
+| `reusable-load-repo-config.yml`   | Load + allowlist-validate `infrastructure/repo-config.yaml` → job outputs (Layer 2, A-779).                                     | — (uses `GITHUB_TOKEN`)   |
+| `reusable-validate-payload.yml`   | Fan-out payload check — skills bundles and/or `.coderabbit.yaml` (Layer 2).                                                     | — (uses `GITHUB_TOKEN`)   |
+| `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).                                         | `ROADRUNNER_PRIVATE_KEY`  |
 
 > **Why `reusable-` prefixes?** It lets a consumer repo (and this repo, which
 > dogfoods its own workflows) keep a same-named caller stub — e.g. `claude.yml`
@@ -261,8 +261,31 @@ jobs:
 Each lane has a boolean opt-out (`eslint`, `markdown`, `yaml`, `actionlint`,
 `changelog` — all default `true`), alongside pass-throughs `node-version-file`,
 `eslint-args`, `markdown-globs`, `yaml-paths`, `yamllint-version`,
-`actionlint-version` and `changelog-script`. Disabling **every** lane is a hard
-error, not a silent green pass — the run fails fast before checkout (A-445).
+`actionlint-version` and `changelog-script`. Opt-in inputs:
+
+- `setup-script` (string, default empty) — runs `pnpm run <script>` after
+  install and before the first lint step (e.g. `sanity-typegen` for codegen).
+- `format` (boolean, default `false`) / `format-script` (default
+  `format:check`) — optional Prettier format-check lane. Consumers need a
+  matching package script (typically `prettier --check .`); vendored trees
+  (`.claude/skills/**`, `.agents/**`, `skills-lock.json`) belong in the
+  consumer's `.prettierignore`.
+
+Disabling **every** lane is a hard error, not a silent green pass — the run
+fails fast before checkout (A-445).
+
+Caller stub with the optional inputs commented out:
+
+```yaml
+jobs:
+  lint:
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-lint.yml@v1
+    with:
+      node-version-file: .nvmrc
+      # setup-script: sanity-typegen
+      # format: true
+      # format-script: format:check
+```
 
 ### `reusable-build-test.yml`
 
@@ -287,8 +310,19 @@ jobs:
 Each lane has a boolean opt-out — `build`, `typecheck`, `test` and `shellcheck`
 default `true`; `bats` and `coverage` default `false` — alongside pass-throughs
 `node-version-file`, `build-script`, `tsconfig`, `test-args`, `shellcheck-paths`,
-`shellcheck-severity` and `bats-paths`. As with the lint bundle, disabling
-**every** lane fails fast rather than passing green (A-445).
+`shellcheck-severity` and `bats-paths`. Opt-in: `setup-script` (string, default
+empty) runs `pnpm run <script>` after install and before the first build/test
+step (e.g. codegen). As with the lint bundle, disabling **every** lane fails
+fast rather than passing green (A-445).
+
+```yaml
+jobs:
+  build-test:
+    uses: acme-skunkworks/shared-workflows/.github/workflows/reusable-build-test.yml@v1
+    with:
+      node-version-file: .nvmrc
+      # setup-script: sanity-typegen
+```
 
 ### `reusable-pkg-release.yml`
 
