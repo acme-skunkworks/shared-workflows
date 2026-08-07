@@ -9,14 +9,14 @@ importers:
   .:
     devDependencies:
       '@acme-skunkworks/changelog-core':
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^1.1.1
+        version: 1.1.1
       '@acme-skunkworks/commitlint-config':
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.0.1
+        version: 1.0.1
       '@acme-skunkworks/markdownlint-config':
-        specifier: ^2.0.0
-        version: 2.0.1
+        specifier: ^3.0.0
+        version: 3.0.0
       '@commitlint/cli':
         specifier: ^21.2.1
         version: 21.2.1(@types/node@26.1.1)(conventional-commits-parser@7.1.0)(typescript@7.0.2)
@@ -38,17 +38,17 @@ importers:
 
 packages:
 
-  '@acme-skunkworks/changelog-core@1.1.0':
-    resolution: {integrity: sha512-uSPCbspEt77l9k+q3EGpiey/RsuDC40+v1XJUa8U0sNP/P/U6N3TOpJ+t9FVOUvyau4FrpnSdol6YVJcd7ti7A==}
+  '@acme-skunkworks/changelog-core@1.1.1':
+    resolution: {integrity: sha512-R54sMZZmm8++61Okv1YggJOsGAjMZ/JQ0Hp6zd1XWfvo2K9/xBhC3+VN9sKlp//6b99e/A9v9Y/oBQGmmyLbZA==}
     engines: {node: '>=22'}
     hasBin: true
 
-  '@acme-skunkworks/commitlint-config@1.0.0':
-    resolution: {integrity: sha512-NljKYUUEuNiQxh9yab0hM/yV4gamgVavDMQ9uddXx2lu1gKwp7DE58d7Q8ooPetCD/o0nDrFfT+GpBNqXXFblw==}
+  '@acme-skunkworks/commitlint-config@1.0.1':
+    resolution: {integrity: sha512-rBA5icoqnDDfRWadOZzTEGoarAxgqu7WCLiaZyd/wr2DJoVra9RbMF4CrEIdtArVmv/7y6Cs5wbWy6dLA1p9aw==}
     engines: {node: '>=22'}
 
-  '@acme-skunkworks/markdownlint-config@2.0.1':
-    resolution: {integrity: sha512-+sDq+P6AAEXBi1D0tSsrEqdIFoBT40/CpVIVBGakzIMKwWbZgNaGvdo9L6PmUziQ9HXxeYrL5JLL/xfRaxRpIA==}
+  '@acme-skunkworks/markdownlint-config@3.0.0':
+    resolution: {integrity: sha512-L3Fs+maqPGpJigbrIAeMCkRA3Dy9SocoYaKtILatKkvpXuJ1XdFHmbI8L0aL0oHUjwvlCU/D/6IvY+hekck6XQ==}
     engines: {node: '>=22'}
 
   '@babel/code-frame@7.29.7':
@@ -881,14 +881,14 @@ packages:
 
 snapshots:
 
-  '@acme-skunkworks/changelog-core@1.1.0': {}
+  '@acme-skunkworks/changelog-core@1.1.1': {}
 
-  '@acme-skunkworks/commitlint-config@1.0.0':
+  '@acme-skunkworks/commitlint-config@1.0.1':
     dependencies:
       '@commitlint/config-conventional': 21.2.0
       '@commitlint/types': 21.2.0
 
-  '@acme-skunkworks/markdownlint-config@2.0.1': {}
+  '@acme-skunkworks/markdownlint-config@3.0.0': {}
 
   '@babel/code-frame@7.29.7':
     dependencies:

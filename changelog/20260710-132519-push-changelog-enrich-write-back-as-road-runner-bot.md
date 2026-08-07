@@ -35,6 +35,6 @@ associated PR" path is the loop guard.
 
 - Caller stubs require `secrets: inherit`; job `GITHUB_TOKEN` scopes narrow to
   `contents: read` + `pull-requests: read` (write is on the App token).
-- `README.md` and `CLAUDE.md` replace the stale "GITHUB_TOKEN / path-scoped
+- `README.md` and `CLAUDE.md` replace the stale "`GITHUB_TOKEN` / path-scoped
   Actions bypass" wording with ADR 0004 (road-runner-bot Trunk bypass) and
   document the org credential prerequisites for canary callers.

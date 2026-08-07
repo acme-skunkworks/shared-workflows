@@ -1,8 +1,8 @@
 ---
 title: Surface the real error when Claude Code Review fails
 release_note: A failed Claude review now reports the SDK's actual error message instead of an opaque "result is_error:true", and the reusable workflow requests actions:read so the github_ci MCP server installs.
-created_at: '2026-07-28T17:06:13Z'
-merged_at: '2026-07-28T17:44:52Z'
+created_at: "2026-07-28T17:06:13Z"
+merged_at: "2026-07-28T17:44:52Z"
 branch: a-1105-surface-claude-review-errors
 pr: 90
 commit: d992357
@@ -37,8 +37,8 @@ stats:
 - The reusable workflow now requests `actions: read`. `claude-code-action` offers
   Claude a `github_ci` MCP server (`get_ci_status`, `get_workflow_run_details`,
   `download_job_log`) and keeps those tools in `--allowedTools` unconditionally,
-  but without the scope it logged "The github_ci MCP server requires
-  'actions: read' permission. Skipping CI server installation." on every run —
+  but without the scope it logged that the `github_ci` MCP server requires
+  `actions: read` permission and skipped CI server installation on every run —
   leaving Claude holding tool names backed by no server. Consumers must add the
   same scope to their caller stub, since a called reusable workflow's job cannot
   hold more than the caller's token grants.

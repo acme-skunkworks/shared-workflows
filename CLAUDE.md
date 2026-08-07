@@ -21,7 +21,7 @@ and dogfood them.
 
 ## Layout
 
-```
+```text
 .github/
 ├── actions/                             # PRODUCT: Layer-1 composite actions (pick-and-mix)
 │   ├── setup-project/                   #   pnpm + Node-from-.nvmrc + store cache
