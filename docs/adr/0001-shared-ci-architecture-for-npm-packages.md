@@ -171,7 +171,7 @@ repo's own Actions (D5).
 
 ### 5.1 Layer map
 
-```
+```text
 ┌─ Consumer repo (e.g. eslint-config) ───────────────────────────────┐
 │  .github/workflows/ci.yml         ← thin caller stubs + triggers   │
 │    ├─ uses: …/reusable-lint.yml@<sha>                              │
