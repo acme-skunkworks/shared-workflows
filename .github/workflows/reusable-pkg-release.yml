@@ -204,12 +204,12 @@ jobs:
       HUSKY: 0
     steps:
       - name: 🛎️ Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false # Nothing git-pushes; avoid artipacked exposure.
 
       - name: 🧰 Set up project
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # shared-workflows actions @v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@280b3d543d8748d20b31fd76e9ee7c60e83f027e # shared-workflows actions @v1.6.0
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
@@ -217,7 +217,7 @@ jobs:
         # Skipped for build-less packages (`build: false`) — the pack step below
         # still produces the tarball from the package sources.
         if: ${{ inputs.build }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/build@950537e9b87ebebef89222a8747331d489d17f65 # shared-workflows actions @v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@280b3d543d8748d20b31fd76e9ee7c60e83f027e # shared-workflows actions @v1.6.0
         with:
           script: ${{ inputs.build-script }}
 
@@ -280,13 +280,13 @@ jobs:
       id-token: write # OIDC for npm Trusted Publishing + provenance
     steps:
       - name: 🛎️ Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # Full history + tags so the version-vs-tag gate can resolve.
           persist-credentials: false # Tags/release go via the gh API, npm via OIDC.
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4.4.0
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v4.4.0
         with:
           run_install: false
 
@@ -518,7 +518,7 @@ jobs:
       attestations: write # Upload the attestation to GitHub
     steps:
       - name: 🛎️ Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false # Publish/attest only — never git-pushes.
 

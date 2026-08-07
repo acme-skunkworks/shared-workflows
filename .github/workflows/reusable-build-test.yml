@@ -181,7 +181,7 @@ jobs:
           echo 'OK — at least one build-test lane is enabled.'
 
       - name: 🛎️ Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -192,7 +192,7 @@ jobs:
         if: >-
           ${{ inputs.build || inputs.typecheck || inputs.test || inputs.bats ||
           inputs.setup-script != '' }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@280b3d543d8748d20b31fd76e9ee7c60e83f027e # v1.6.0
         with:
           node-version-file: ${{ inputs.node-version-file }}
 
@@ -202,33 +202,33 @@ jobs:
 
       - name: 🏗️ Build check
         if: ${{ inputs.build }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/build@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/build@280b3d543d8748d20b31fd76e9ee7c60e83f027e # v1.6.0
         with:
           script: ${{ inputs.build-script }}
 
       - name: 🔎 Typecheck
         if: ${{ inputs.typecheck }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/typecheck@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/typecheck@280b3d543d8748d20b31fd76e9ee7c60e83f027e # v1.6.0
         with:
           tsconfig: ${{ inputs.tsconfig }}
 
       - name: 🧪 Test (Vitest)
         if: ${{ inputs.test }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/test-vitest@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-vitest@280b3d543d8748d20b31fd76e9ee7c60e83f027e # v1.6.0
         with:
           args: ${{ inputs.test-args }}
           coverage: ${{ inputs.coverage }}
 
       - name: 🐚 ShellCheck
         if: ${{ inputs.shellcheck }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/shellcheck@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/shellcheck@280b3d543d8748d20b31fd76e9ee7c60e83f027e # v1.6.0
         with:
           paths: ${{ inputs.shellcheck-paths }}
           severity: ${{ inputs.shellcheck-severity }}
 
       - name: 🦇 Test (bats)
         if: ${{ inputs.bats }}
-        uses: acme-skunkworks/shared-workflows/.github/actions/test-bats@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
+        uses: acme-skunkworks/shared-workflows/.github/actions/test-bats@280b3d543d8748d20b31fd76e9ee7c60e83f027e # v1.6.0
         with:
           paths: ${{ inputs.bats-paths }}
           recursive: ${{ inputs.bats-recursive }}
