@@ -4,14 +4,16 @@ name: Reusable / Lint
 # Layer-2 convenience workflow (ADR 0001 §5.7). One job pays `setup-project`
 # ONCE, then composes the shared Layer-1 lint composite actions: eslint,
 # lint-markdown, lint-yaml (yamllint + actionlint) and changelog-validate.
-# Consumers drop their per-repo lint jobs and call this instead. Prettier is
-# deliberately out of scope until a `prettier` composite action exists (it is
-# not in §5.7's canonical bundle).
+# Consumers drop their per-repo lint jobs and call this instead. An optional
+# Prettier format-check lane (`format: true`) and an optional post-install
+# `setup-script` (e.g. codegen) are opt-in so existing callers stay unchanged.
 #
 # Each sub-check has a boolean opt-out input (`eslint: false`, `markdown:
 # false`, …) — §5.7's first opt-out rung: drop a check without leaving the
-# bundle. The other inputs are thin pass-throughs to the composite actions,
-# fed in a caller stub from the consumer's `repo-config.yaml`.
+# bundle. Optional opt-ins: `setup-script` (post-install codegen) and `format`
+# (Prettier format-check lane, default false). The other inputs are thin
+# pass-throughs to the composite actions, fed in a caller stub from the
+# consumer's `repo-config.yaml`.
 #
 # A caller that disables EVERY lane would otherwise check out, run nothing and
 # exit GREEN — a silent pass the consumer's local `GO/NO GO` aggregator counts
@@ -128,6 +130,23 @@ on:
         type: string
         required: false
         default: changelog:validate
+      setup-script:
+        description: >-
+          Optional package script run after install, before any lint step
+          (e.g. codegen). Empty skips the step.
+        required: false
+        type: string
+        default: ""
+      format:
+        description: Run a Prettier format check.
+        required: false
+        type: boolean
+        default: false
+      format-script:
+        description: Package script for the format check.
+        required: false
+        type: string
+        default: "format:check"
 
 # Deny all token scopes at the workflow root; the job below grants only the
 # contents:read that checkout needs (least privilege; zizmor-clean).
@@ -153,11 +172,11 @@ jobs:
         # (not a job `if:`) is deliberate: an `if:` would SKIP the job green,
         # which is the exact silent pass we are killing.
         env:
-          ANY_LANE_ENABLED: ${{ inputs.eslint || inputs.markdown || inputs.yaml || inputs.changelog }}
+          ANY_LANE_ENABLED: ${{ inputs.eslint || inputs.markdown || inputs.yaml || inputs.changelog || inputs.format }}
         run: |
           set -euo pipefail
           if [ "${ANY_LANE_ENABLED}" != 'true' ]; then
-            echo "::error::At least one lint lane (eslint/markdown/yaml/changelog) must be enabled."
+            echo "::error::At least one lint lane (eslint/markdown/yaml/changelog/format) must be enabled."
             exit 1
           fi
           echo 'OK — at least one lint lane is enabled.'
@@ -168,13 +187,20 @@ jobs:
           persist-credentials: false
 
       - name: 🧰 Set up project
-        # Only the pnpm-backed checks (eslint/markdown/changelog) need install;
-        # skip it when a repo runs YAML-only (yamllint/actionlint use pip + the
-        # pinned installer, not pnpm).
-        if: ${{ inputs.eslint || inputs.markdown || inputs.changelog }}
+        # Only the pnpm-backed checks (eslint/markdown/changelog/format) need
+        # install; skip it when a repo runs YAML-only (yamllint/actionlint use
+        # pip + the pinned installer, not pnpm). Also install when a
+        # setup-script is provided (codegen needs node_modules).
+        if: >-
+          ${{ inputs.eslint || inputs.markdown || inputs.changelog ||
+          inputs.format || inputs.setup-script != '' }}
         uses: acme-skunkworks/shared-workflows/.github/actions/setup-project@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           node-version-file: ${{ inputs.node-version-file }}
+
+      - name: 🏗️ Setup script
+        if: inputs.setup-script != ''
+        run: pnpm run ${{ inputs.setup-script }}
 
       - name: 🧹 ESLint
         if: ${{ inputs.eslint }}
@@ -187,6 +213,10 @@ jobs:
         uses: acme-skunkworks/shared-workflows/.github/actions/lint-markdown@950537e9b87ebebef89222a8747331d489d17f65 # v1.5.1
         with:
           globs: ${{ inputs.markdown-globs }}
+
+      - name: 💅 Format check
+        if: inputs.format
+        run: pnpm run ${{ inputs.format-script }}
 
       - name: 📐 Lint YAML
         if: ${{ inputs.yaml }}
