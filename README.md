@@ -15,18 +15,18 @@ release gate pattern).
 
 ## Available workflows
 
-| Workflow                          | Purpose                                                                                       | Secrets                   |
-| --------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------- |
-| `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.                                      | `CLAUDE_CODE_OAUTH_TOKEN` |
-| `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                                                     | `CLAUDE_CODE_OAUTH_TOKEN` |
-| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (dual merge policy; not sole bump signal — A-1176).    | — (uses `GITHUB_TOKEN`)   |
-| `reusable-validate-commits.yml`   | Enforce Conventional Commits on every `base..head` commit (A-981; per-commit merge gate).     | — (uses `GITHUB_TOKEN`)   |
+| Workflow                          | Purpose                                                                                                                         | Secrets                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `reusable-claude.yml`             | Interactive `@claude` on issues / PR comments / reviews.                                                                        | `CLAUDE_CODE_OAUTH_TOKEN` |
+| `reusable-claude-code-review.yml` | Automated Claude review on pull requests.                                                                                       | `CLAUDE_CODE_OAUTH_TOKEN` |
+| `reusable-validate-pr-title.yml`  | Enforce a Conventional Commit PR title (dual merge policy; not sole bump signal — A-1176).                                      | — (uses `GITHUB_TOKEN`)   |
+| `reusable-validate-commits.yml`   | Enforce Conventional Commits on every `base..head` commit (A-981; per-commit merge gate).                                       | — (uses `GITHUB_TOKEN`)   |
 | `reusable-lint.yml`               | Coarse lint bundle — ESLint, markdownlint, yamllint/actionlint, changelog-validate, optional Prettier + setup-script (Layer 2). | — (uses `GITHUB_TOKEN`)   |
-| `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).              | — (uses `GITHUB_TOKEN`)   |
-| `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).  | — (OIDC + `GITHUB_TOKEN`) |
-| `reusable-load-repo-config.yml`   | Load + allowlist-validate `infrastructure/repo-config.yaml` → job outputs (Layer 2, A-779).   | — (uses `GITHUB_TOKEN`)   |
-| `reusable-validate-payload.yml`   | Fan-out payload check — skills bundles and/or `.coderabbit.yaml` (Layer 2).                   | — (uses `GITHUB_TOKEN`)   |
-| `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).       | `ROADRUNNER_PRIVATE_KEY`  |
+| `reusable-build-test.yml`         | Coarse build/test bundle — build, typecheck, Vitest, ShellCheck, bats (Layer 2).                                                | — (uses `GITHUB_TOKEN`)   |
+| `reusable-pkg-release.yml`        | Build-once → npm OIDC Trusted Publishing → GitHub Packages mirror → tag + release (Layer 2).                                    | — (OIDC + `GITHUB_TOKEN`) |
+| `reusable-load-repo-config.yml`   | Load + allowlist-validate `infrastructure/repo-config.yaml` → job outputs (Layer 2, A-779).                                     | — (uses `GITHUB_TOKEN`)   |
+| `reusable-validate-payload.yml`   | Fan-out payload check — skills bundles and/or `.coderabbit.yaml` (Layer 2).                                                     | — (uses `GITHUB_TOKEN`)   |
+| `reusable-changelog-enrich.yml`   | Post-merge changelog enrich / finalise via `@acme-skunkworks/changelog-core` (Layer 2).                                         | `ROADRUNNER_PRIVATE_KEY`  |
 
 > **Why `reusable-` prefixes?** It lets a consumer repo (and this repo, which
 > dogfoods its own workflows) keep a same-named caller stub — e.g. `claude.yml`
